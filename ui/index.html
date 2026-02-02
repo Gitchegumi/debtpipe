@@ -19,16 +19,20 @@
         .sticky-col { position: sticky; left: 0; background: #0f172a; z-index: 10; }
         
         /* PDF specific styling */
-        .pdf-only { display: none; }
+        .pdf-template { 
+            position: absolute; 
+            left: -9999px; 
+            top: 0; 
+            width: 1000px; /* Force a consistent width for capture */
+            background: #0f172a; 
+            color: white;
+        }
         @media print {
             .no-print { display: none !important; }
-            .pdf-only { display: block !important; }
             .pdf-page-break { page-break-before: always; }
-            .pdf-container { background: #0f172a; color: white; padding: 20px; }
             table { page-break-inside: auto; width: 100%; border-collapse: collapse; }
             tr { page-break-inside: avoid; page-break-after: auto; }
             thead { display: table-header-group; }
-            tfoot { display: table-footer-group; }
         }
     </style>
 </head>
@@ -42,9 +46,9 @@
             <div class="hidden sm:block text-sm text-slate-400 font-medium">Unlimited Debt Payoff Simulator</div>
         </header>
 
-        <!-- PDF Hidden Template -->
-        <div id="pdf-template" class="pdf-only">
-            <div class="pdf-container">
+        <!-- PDF Template (Hidden but in DOM) -->
+        <div id="pdf-template" class="pdf-template">
+            <div class="p-8">
                 <div class="flex items-center justify-between mb-10 border-b border-slate-700 pb-6">
                     <div>
                         <h1 class="text-4xl font-black tracking-tighter text-white">DebtPipe</h1>
@@ -494,12 +498,6 @@
             document.getElementById('pdf-milestones-slot').innerHTML = document.getElementById('milestones-container').innerHTML;
             document.getElementById('pdf-timeline-slot').innerHTML = document.getElementById('timeline-container').innerHTML;
 
-            // 3. Temporarily show template for capture
-            template.style.display = 'block';
-            template.style.position = 'absolute';
-            template.style.left = '-9999px';
-            template.style.top = '0';
-
             const opt = {
                 margin: [10, 5],
                 filename: 'DebtPipe_Payoff_Report.pdf',
@@ -508,15 +506,14 @@
                     scale: 2, 
                     backgroundColor: '#0f172a',
                     useCORS: true,
-                    logging: false
+                    logging: false,
+                    letterRendering: true
                 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
 
-            // 4. Generate and hide
-            html2pdf().set(opt).from(template).toPdf().get('pdf').save().then(() => {
-                template.style.display = 'none';
-            });
+            // 3. Generate (Template is already "visible" but off-screen)
+            html2pdf().set(opt).from(template).save();
         }
     </script>
 </body>
