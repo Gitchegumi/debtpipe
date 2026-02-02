@@ -155,10 +155,10 @@
                     <div id="view-timeline" class="p-0 hidden">
                         <div class="overflow-auto max-h-[600px]">
                             <table class="w-full text-left text-xs border-collapse">
-                                <thead id="timelineHeader" class="bg-slate-800 text-slate-400 uppercase text-[10px] tracking-widest sticky top-0 z-20">
+                                <thead id="timelineHeader" class="bg-slate-800 text-slate-400 uppercase text-[10px] tracking-widest sticky top-0 z-20 text-center">
                                     <!-- Month/Date Headers -->
                                 </thead>
-                                <tbody id="timelineBody" class="divide-y divide-slate-700/50 text-slate-400">
+                                <tbody id="timelineBody" class="divide-y divide-slate-700/50 text-slate-400 text-center">
                                     <!-- Rows: Debts, X-Axis: Months -->
                                 </tbody>
                             </table>
@@ -263,14 +263,18 @@
             // 1. Parse
             const debts = rawData.trim().split('\n').map(line => {
                 const parts = line.split(',').map(s => s.trim());
+                let rate = parseFloat(parts[2]);
+                // Smart conversion: if < 1, assume decimal (0.18 -> 18%), if > 1, assume percent (18 -> 18%)
+                if (rate < 1 && rate > 0) rate = rate * 100;
+
                 return {
                     name: parts[0],
                     balance: parseFloat(parts[1]),
-                    interestRate: parseFloat(parts[2]) * 100, // Convert decimal to percentage
+                    interestRate: rate || 0,
                     minPayment: parseFloat(parts[3]),
                     dueDay: parseInt(parts[4]) || 1
                 };
-            }).filter(d => !isNaN(d.balance));
+            }).filter(d => !isNaN(d.balance) && !isNaN(d.minPayment));
 
             if (debts.length === 0) return;
 
@@ -289,12 +293,11 @@
 
             // 3. Simulate
             let currentMonth = 0;
-            let totalInterest = 0;
+            let totalInterestPaid = 0;
             const initialPrincipal = debts.reduce((sum, d) => sum + d.balance, 0);
-            const monthlyBudget = extraPayment + debts.reduce((sum, d) => sum + d.minPayment, 0);
             
-            const timeline = []; // Will store { month, date, debtBalances: { name: bal }, debtPayments: { name: paid } }
-            const milestones = []; // Will store { name, month, date, rate }
+            const timeline = [];
+            const milestones = [];
             
             let currentDebts = JSON.parse(JSON.stringify(prioritizedDebts));
 
@@ -312,7 +315,7 @@
                     let interest = 0;
                     if (d.balance > 0) {
                         interest = d.balance * ((d.interestRate / 100) / 12);
-                        totalInterest += interest;
+                        totalInterestPaid += interest;
                         d.balance += interest;
                     }
                     snapshot.interests[d.name] = interest;
@@ -342,7 +345,7 @@
                     snapshot.total += d.balance;
 
                     // Check for Payoff Milestone
-                    if (d.balance === 0 && !milestones.find(m => m.name === d.name)) {
+                    if (d.balance <= 0 && !milestones.find(m => m.name === d.name)) {
                         milestones.push({ name: d.name, month: currentMonth, date: dateStr, rate: d.interestRate });
                     }
                 }
@@ -355,11 +358,9 @@
             const finalDate = new Date(baseDate);
             finalDate.setMonth(baseDate.getMonth() + currentMonth - 1);
             document.getElementById('metric-date').innerText = `Payoff Date: ${finalDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
-            document.getElementById('metric-interest').innerText = `$${totalInterest.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('metric-total').innerText = `$${(initialPrincipal + totalInterest).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('metric-interest').innerText = `$${totalInterestPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('metric-total').innerText = `$${(initialPrincipal + totalInterestPaid).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             document.getElementById('metric-budget').innerText = `$${monthlyBudget.toLocaleString()}`;
-            
-            // Show Flow Split: Extra + 1st Half Mins | 2nd Half Mins
             document.getElementById('metric-flow-split').innerText = `1-14th: $${(extraPayment + firstHalfMins).toLocaleString()} | 15th+: $${secondHalfMins.toLocaleString()}`;
 
             renderMilestones(milestones, prioritizedDebts);
@@ -368,17 +369,15 @@
         }
 
         function renderMilestones(milestones, allDebts) {
-            // Ensure all debts are shown, even if not yet paid (in case of limit)
             const payoffOrder = milestones.map(m => m.name);
             const remaining = allDebts.filter(d => !payoffOrder.includes(d.name)).map(d => d.name);
-            
             const combined = [...milestones, ...remaining.map(name => ({ name, month: '--', date: '--', rate: allDebts.find(d => d.name === name).interestRate }))];
 
             document.getElementById('milestonesBody').innerHTML = combined.map((m, i) => `
-                <tr class="hover:bg-slate-800/30 transition-colors">
+                <tr class="hover:bg-slate-800/30 transition-colors border-b border-slate-700/30">
                     <td class="p-4 text-slate-500 font-mono">#${i + 1}</td>
                     <td class="p-4 font-bold text-white">${m.name}</td>
-                    <td class="p-4 text-center text-slate-400 font-medium">${m.rate}%</td>
+                    <td class="p-4 text-center text-slate-400 font-medium">${m.rate.toFixed(2)}%</td>
                     <td class="p-4 text-center font-medium">${m.month}</td>
                     <td class="p-4 text-right text-emerald-400 font-extrabold">${m.date}</td>
                 </tr>
@@ -386,28 +385,23 @@
         }
 
         function renderTimelineTransposed(timeline, debtNames) {
-            // Y-Axis: Debts
-            // X-Axis: Months/Dates
-            
-            // Header: Month names
-            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px]">Debt Name</th>` + 
-                timeline.map(step => `<th class="p-3 text-center border-l border-slate-700/50 min-w-[100px]">${step.date}</th>`).join('') + `</tr>`;
+            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600">Debt Name</th>` + 
+                timeline.map(step => `<th class="p-3 text-center border-l border-slate-700/50 min-w-[110px] border-b border-slate-600">${step.date}</th>`).join('') + `</tr>`;
             document.getElementById('timelineHeader').innerHTML = headerRow;
 
-            // Rows: One row per debt
             document.getElementById('timelineBody').innerHTML = debtNames.map(name => `
                 <tr class="hover:bg-slate-800/20 group">
-                    <td class="p-3 font-bold text-slate-200 sticky-col z-10 group-hover:bg-slate-800 transition-colors">${name}</td>
+                    <td class="p-3 font-bold text-slate-200 sticky-col z-10 group-hover:bg-slate-800 transition-colors border-b border-slate-700/30 text-left">${name}</td>
                     ${timeline.map(step => {
                         const bal = step.balances[name];
                         const paid = step.payments[name];
                         const interest = step.interests[name];
-                        const isZero = bal === 0 && (timeline[timeline.indexOf(step)-1]?.balances[name] > 0 || timeline.indexOf(step) === 0);
+                        const isZero = bal <= 0 && (timeline[timeline.indexOf(step)-1]?.balances[name] > 0 || timeline.indexOf(step) === 0);
                         return `
-                            <td class="p-3 text-center border-l border-slate-700/30 ${isZero ? 'bg-emerald-900/20' : ''}">
-                                <div class="${bal === 0 ? 'text-emerald-500 font-bold' : 'text-slate-300'}">${bal === 0 ? 'PAID' : '$' + bal.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                                ${paid > 0 ? `<div class="text-[9px] text-emerald-500 font-bold italic">Pay $${paid.toLocaleString(undefined, {maximumFractionDigits:0})}</div>` : ''}
-                                ${interest > 0 ? `<div class="text-[9px] text-rose-500 font-medium">Int. $${interest.toLocaleString(undefined, {maximumFractionDigits:0})}</div>` : ''}
+                            <td class="p-3 text-center border-l border-slate-700/30 border-b border-slate-700/30 ${isZero ? 'bg-emerald-900/20' : ''}">
+                                <div class="${bal <= 0 ? 'text-emerald-500 font-bold' : 'text-slate-300'}">${bal <= 0 ? 'PAID' : '$' + Math.round(bal).toLocaleString()}</div>
+                                ${paid > 0 ? `<div class="text-[10px] text-emerald-400 font-bold mt-1">Pay $${Math.round(paid).toLocaleString()}</div>` : ''}
+                                ${interest > 0 ? `<div class="text-[9px] text-rose-500/80 font-medium italic">Int. $${Math.round(interest).toLocaleString()}</div>` : ''}
                             </td>
                         `;
                     }).join('')}
@@ -423,7 +417,7 @@
                 data: {
                     labels: timeline.map(d => d.date),
                     datasets: [{
-                        label: 'Remaining Debt',
+                        label: 'Total Debt',
                         data: timeline.map(d => d.total),
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
