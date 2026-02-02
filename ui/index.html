@@ -481,25 +481,42 @@
         }
 
         function exportToPDF() {
-            // Setup Template Data
+            const template = document.getElementById('pdf-template');
+            
+            // 1. Setup Template Data
             document.getElementById('pdf-gen-date').innerText = `Generated: ${new Date().toLocaleDateString()}`;
             const method = document.getElementById('method').value;
             const extra = document.getElementById('extra').value;
             document.getElementById('pdf-strategy-meta').innerText = `Strategy: ${method.charAt(0).toUpperCase() + method.slice(1)} | Extra: $${extra}/mo`;
 
-            // Clone content into slots
+            // 2. Clone content into slots
             document.getElementById('pdf-metrics-slot').innerHTML = document.getElementById('metrics-container').innerHTML;
             document.getElementById('pdf-milestones-slot').innerHTML = document.getElementById('milestones-container').innerHTML;
             document.getElementById('pdf-timeline-slot').innerHTML = document.getElementById('timeline-container').innerHTML;
 
-            const element = document.getElementById('pdf-template');
-            
-            html2pdf().set({
+            // 3. Temporarily show template for capture
+            template.style.display = 'block';
+            template.style.position = 'absolute';
+            template.style.left = '-9999px';
+            template.style.top = '0';
+
+            const opt = {
                 margin: [10, 5],
                 filename: 'DebtPipe_Payoff_Report.pdf',
-                html2canvas: { scale: 2, backgroundColor: '#0f172a' },
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    backgroundColor: '#0f172a',
+                    useCORS: true,
+                    logging: false
+                },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-            }).from(element).save();
+            };
+
+            // 4. Generate and hide
+            html2pdf().set(opt).from(template).toPdf().get('pdf').save().then(() => {
+                template.style.display = 'none';
+            });
         }
     </script>
 </body>
