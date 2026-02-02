@@ -97,25 +97,25 @@
             <div class="xl:col-span-3 space-y-6">
                 <!-- Metrics Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
+                    <div class="glass p-6 rounded-2xl border-l-4 border-emerald-500 min-h-[130px] flex flex-col justify-center">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Time to Freedom</div>
                         <div class="text-2xl font-bold text-white" id="metric-months">0 Months</div>
-                        <div class="text-xs text-slate-400" id="metric-date">Payoff Date: --</div>
+                        <div class="text-xs text-slate-400 mt-1" id="metric-date">Payoff Date: --</div>
                     </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-amber-500">
+                    <div class="glass p-6 rounded-2xl border-l-4 border-amber-500 min-h-[130px] flex flex-col justify-center">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Interest</div>
                         <div class="text-2xl font-bold text-amber-400" id="metric-interest">$0.00</div>
-                        <div class="text-xs text-slate-400">Paid to banks</div>
+                        <div class="text-xs text-slate-400 mt-1">Paid to banks</div>
                     </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-rose-500">
+                    <div class="glass p-6 rounded-2xl border-l-4 border-rose-500 min-h-[130px] flex flex-col justify-center">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Cost</div>
                         <div class="text-2xl font-bold text-rose-400" id="metric-total">$0.00</div>
-                        <div class="text-xs text-slate-400">Principal + Interest</div>
+                        <div class="text-xs text-slate-400 mt-1">Principal + Interest</div>
                     </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
+                    <div class="glass p-6 rounded-2xl border-l-4 border-blue-500 min-h-[130px] flex flex-col justify-center">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Monthly Flow</div>
                         <div class="text-2xl font-bold text-blue-400" id="metric-budget">$0.00</div>
-                        <div class="text-[10px] text-slate-400" id="metric-flow-split">Split: --</div>
+                        <div class="text-[10px] text-slate-400 mt-1" id="metric-flow-split">Split: --</div>
                     </div>
                 </div>
 
@@ -387,8 +387,8 @@
         }
 
         function renderTimelineTransposed(timeline, debtNames) {
-            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600">Debt Name</th>` + 
-                timeline.map(step => `<th class="p-3 text-center border-l border-slate-700/50 min-w-[110px] border-b border-slate-600">${step.date}</th>`).join('') + `</tr>`;
+            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600 text-left">Debt Name</th>` + 
+                timeline.map(step => `<th class="p-2 text-center border-l border-slate-700/50 min-w-[90px] border-b border-slate-600">${step.date}</th>`).join('') + `</tr>`;
             document.getElementById('timelineHeader').innerHTML = headerRow;
 
             document.getElementById('timelineBody').innerHTML = debtNames.map(name => `
@@ -397,13 +397,11 @@
                     ${timeline.map(step => {
                         const bal = step.balances[name];
                         const paid = step.payments[name];
-                        const interest = step.interests[name];
                         const isZero = bal <= 0 && (timeline[timeline.indexOf(step)-1]?.balances[name] > 0 || timeline.indexOf(step) === 0);
                         return `
-                            <td class="p-3 text-center border-l border-slate-700/30 border-b border-slate-700/30 ${isZero ? 'bg-emerald-900/20' : ''}">
-                                <div class="${bal <= 0 ? 'text-emerald-500 font-bold' : 'text-slate-300'}">${bal <= 0 ? 'PAID' : '$' + Math.round(bal).toLocaleString()}</div>
-                                ${paid > 0 ? `<div class="text-[10px] text-emerald-400 font-bold mt-1">Pay $${Math.round(paid).toLocaleString()}</div>` : ''}
-                                ${interest > 0 ? `<div class="text-[9px] text-rose-500/80 font-medium italic">Int. $${Math.round(interest).toLocaleString()}</div>` : ''}
+                            <td class="p-2 text-center border-l border-slate-700/30 border-b border-slate-700/30 ${isZero ? 'bg-emerald-900/20' : ''}">
+                                <div class="${bal <= 0 ? 'text-emerald-500 font-bold' : 'text-slate-300 text-xs'}">${bal <= 0 ? 'PAID' : '$' + Math.round(bal).toLocaleString()}</div>
+                                ${paid > 0 && bal > 0 ? `<div class="text-[9px] text-emerald-400/80 mt-0.5">-$${Math.round(paid).toLocaleString()}</div>` : ''}
                             </td>
                         `;
                     }).join('')}
