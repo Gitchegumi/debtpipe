@@ -16,6 +16,7 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
         .tab-active { border-bottom: 2px solid #10b981; color: #10b981; }
+        .sticky-col { position: sticky; left: 0; background: #0f172a; z-index: 10; }
     </style>
 </head>
 <body class="p-4 md:p-8 min-h-screen font-sans">
@@ -23,7 +24,7 @@
         <header class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20"><i data-lucide="banknote" class="text-white"></i></div>
-                <h1 class="text-3xl font-bold tracking-tight">DebtPipe</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-white">DebtPipe</h1>
             </div>
             <div class="hidden sm:block text-sm text-slate-400 font-medium">Unlimited Debt Payoff Simulator</div>
         </header>
@@ -59,12 +60,23 @@
                         <i data-lucide="list" class="w-4 h-4"></i> Debt Data
                     </h2>
                     <div class="flex flex-col gap-3">
-                        <button onclick="document.getElementById('csvInput').click()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group">
-                            <i data-lucide="upload" class="w-4 h-4 group-hover:text-emerald-400"></i> Upload CSV/TSV
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="document.getElementById('csvInput').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold">
+                                <i data-lucide="upload" class="w-4 h-4 group-hover:text-emerald-400"></i> Upload
+                            </button>
+                            <button onclick="downloadTemplate()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold" title="Download CSV Template">
+                                <i data-lucide="download" class="w-4 h-4 group-hover:text-blue-400"></i>
+                            </button>
+                        </div>
                         <input type="file" id="csvInput" class="hidden" accept=".csv,.tsv,.txt" onchange="handleFileUpload(event)">
                         
-                        <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
+                        <div>
+                            <div class="flex justify-between items-center mb-1 px-1">
+                                <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Manual Entry Format</label>
+                                <span class="text-[9px] text-slate-600 italic">Name, Bal, Rate, Min, [Day]</span>
+                            </div>
+                            <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
+                        </div>
                         
                         <div class="flex gap-2 pt-2">
                             <button onclick="runSimulation()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40">
@@ -87,7 +99,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Time to Freedom</div>
-                        <div class="text-2xl font-bold" id="metric-months">0 Months</div>
+                        <div class="text-2xl font-bold text-white" id="metric-months">0 Months</div>
                         <div class="text-xs text-slate-400" id="metric-date">Payoff Date: --</div>
                     </div>
                     <div class="glass p-5 rounded-2xl border-l-4 border-amber-500">
@@ -98,12 +110,12 @@
                     <div class="glass p-5 rounded-2xl border-l-4 border-rose-500">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Cost</div>
                         <div class="text-2xl font-bold text-rose-400" id="metric-total">$0.00</div>
-                        <div class="text-xs text-slate-400">Total volume</div>
+                        <div class="text-xs text-slate-400">Principal + Interest</div>
                     </div>
                     <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Monthly Flow</div>
                         <div class="text-2xl font-bold text-blue-400" id="metric-budget">$0.00</div>
-                        <div class="text-xs text-slate-400">Fixed monthly commitment</div>
+                        <div class="text-[10px] text-slate-400" id="metric-flow-split">Split: --</div>
                     </div>
                 </div>
 
@@ -116,20 +128,20 @@
                 <section class="glass rounded-2xl overflow-hidden">
                     <div class="border-b border-slate-700/50 flex bg-slate-800/30">
                         <button onclick="switchTab('milestones')" id="tab-milestones" class="p-4 px-6 text-sm font-bold transition-all tab-active">Milestones</button>
-                        <button onclick="switchTab('timeline')" id="tab-timeline" class="p-4 px-6 text-sm font-bold text-slate-400 hover:text-white transition-all">Full Timeline</button>
+                        <button onclick="switchTab('timeline')" id="tab-timeline" class="p-4 px-6 text-sm font-bold text-slate-400 hover:text-white transition-all">Full Timeline View</button>
                     </div>
 
                     <!-- Milestones View -->
                     <div id="view-milestones" class="p-0">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm border-collapse">
-                                <thead class="bg-slate-800/50 text-slate-400 uppercase text-[10px] tracking-widest">
+                                <thead class="bg-slate-800/50 text-slate-400 uppercase text-[10px] tracking-widest font-bold">
                                     <tr>
-                                        <th class="p-4 font-bold">Priority</th>
-                                        <th class="p-4 font-bold">Debt Name</th>
-                                        <th class="p-4 font-bold text-center">Interest Rate</th>
-                                        <th class="p-4 font-bold text-center">Payoff Month</th>
-                                        <th class="p-4 font-bold text-right">Payoff Date</th>
+                                        <th class="p-4">Payoff Order</th>
+                                        <th class="p-4">Debt Name</th>
+                                        <th class="p-4 text-center">Interest Rate</th>
+                                        <th class="p-4 text-center">Month #</th>
+                                        <th class="p-4 text-right">Target Date</th>
                                     </tr>
                                 </thead>
                                 <tbody id="milestonesBody" class="divide-y divide-slate-700/50 text-slate-300">
@@ -139,19 +151,15 @@
                         </div>
                     </div>
 
-                    <!-- Timeline View -->
+                    <!-- Timeline View (Transposed) -->
                     <div id="view-timeline" class="p-0 hidden">
                         <div class="overflow-auto max-h-[600px]">
-                            <table class="w-full text-left text-xs border-collapse sticky-header">
-                                <thead class="bg-slate-800 text-slate-400 uppercase text-[10px] tracking-widest sticky top-0 z-10 shadow-lg">
-                                    <tr id="timelineHeader">
-                                        <th class="p-3 bg-slate-800">Month</th>
-                                        <th class="p-3 bg-slate-800">Date</th>
-                                        <!-- Dynamic Debt Headers -->
-                                    </tr>
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead id="timelineHeader" class="bg-slate-800 text-slate-400 uppercase text-[10px] tracking-widest sticky top-0 z-20 text-center">
+                                    <!-- Month/Date Headers -->
                                 </thead>
-                                <tbody id="timelineBody" class="divide-y divide-slate-700/50 text-slate-400">
-                                    <!-- Dynamic -->
+                                <tbody id="timelineBody" class="divide-y divide-slate-700/50 text-slate-400 text-center">
+                                    <!-- Rows: Debts, X-Axis: Months -->
                                 </tbody>
                             </table>
                         </div>
@@ -163,7 +171,6 @@
 
     <script>
         let chartInstance = null;
-        let simulationResults = null;
 
         window.onload = () => {
             const now = new Date();
@@ -226,6 +233,20 @@
             }
         }
 
+        function downloadTemplate() {
+            const headers = "Name, Balance, Interest Rate (Decimal), Min Payment, Due Day (Optional)\n";
+            const example = "Credit Card A, 5000, 0.1899, 150, 15\nPersonal Loan, 12000, 0.085, 350, 1\nCar Loan, 8000, 0.05, 250, 28";
+            const blob = new Blob([headers + example], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'DebtPipe_Template.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
         function runSimulation() {
             const rawData = document.getElementById('debtData').value;
             const extraPayment = parseFloat(document.getElementById('extra').value) || 0;
@@ -237,37 +258,48 @@
             localStorage.setItem('debtpipe_method', method);
             localStorage.setItem('debtpipe_start', startVal);
 
-            const baseDate = new Date(startVal + '-01');
+            const baseDate = new Date(startVal + '-01T12:00:00'); // Midday to avoid TZ issues
 
             // 1. Parse
             const debts = rawData.trim().split('\n').map(line => {
                 const parts = line.split(',').map(s => s.trim());
+                let rate = parseFloat(parts[2]);
+                // Smart conversion: if < 1, assume decimal (0.18 -> 18%), if > 1, assume percent (18 -> 18%)
+                if (rate < 1 && rate > 0) rate = rate * 100;
+
                 return {
                     name: parts[0],
                     balance: parseFloat(parts[1]),
-                    interestRate: parseFloat(parts[2]),
+                    interestRate: rate || 0,
                     minPayment: parseFloat(parts[3]),
                     dueDay: parseInt(parts[4]) || 1
                 };
-            }).filter(d => !isNaN(d.balance));
+            }).filter(d => !isNaN(d.balance) && !isNaN(d.minPayment));
 
-            // 2. Sort
-            const sortedDebts = [...debts];
+            if (debts.length === 0) return;
+
+            // Calculate Flow Split (1-14, 15-End)
+            const firstHalfMins = debts.filter(d => d.dueDay <= 14).reduce((sum, d) => sum + d.minPayment, 0);
+            const secondHalfMins = debts.filter(d => d.dueDay > 14).reduce((sum, d) => sum + d.minPayment, 0);
+            const monthlyBudget = extraPayment + firstHalfMins + secondHalfMins;
+
+            // 2. Sort for Priority
+            const prioritizedDebts = [...debts];
             if (method === "snowball") {
-                sortedDebts.sort((a, b) => a.balance - b.balance);
+                prioritizedDebts.sort((a, b) => a.balance - b.balance);
             } else {
-                sortedDebts.sort((a, b) => b.interestRate - a.interestRate);
+                prioritizedDebts.sort((a, b) => b.interestRate - a.interestRate);
             }
 
             // 3. Simulate
             let currentMonth = 0;
-            let totalInterest = 0;
+            let totalInterestPaid = 0;
             const initialPrincipal = debts.reduce((sum, d) => sum + d.balance, 0);
-            const monthlyBudget = extraPayment + debts.reduce((sum, d) => sum + d.minPayment, 0);
             
             const timeline = [];
             const milestones = [];
-            let currentDebts = JSON.parse(JSON.stringify(sortedDebts));
+            
+            let currentDebts = JSON.parse(JSON.stringify(prioritizedDebts));
 
             while (currentDebts.some(d => d.balance > 0) && currentMonth < 600) {
                 currentMonth++;
@@ -276,19 +308,20 @@
                 monthDate.setMonth(baseDate.getMonth() + currentMonth - 1);
                 const dateStr = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
 
-                // Snapshot for timeline
-                const snapshot = { month: currentMonth, date: dateStr, debts: [], total: 0 };
+                const snapshot = { month: currentMonth, date: dateStr, balances: {}, payments: {}, interests: {}, total: 0 };
 
-                // Interest
+                // A. Accrue Interest
                 currentDebts.forEach(d => {
+                    let interest = 0;
                     if (d.balance > 0) {
-                        const interest = d.balance * ((d.interestRate / 100) / 12);
-                        totalInterest += interest;
+                        interest = d.balance * ((d.interestRate / 100) / 12);
+                        totalInterestPaid += interest;
                         d.balance += interest;
                     }
+                    snapshot.interests[d.name] = interest;
                 });
 
-                // Mins
+                // B. Pay Minimums
                 currentDebts.forEach(d => {
                     let paid = 0;
                     if (d.balance > 0) {
@@ -296,22 +329,25 @@
                         d.balance -= paid;
                         budget -= paid;
                     }
-                    snapshot.debts[d.name] = { bal: d.balance, paid: paid };
+                    snapshot.payments[d.name] = paid;
                 });
 
-                // Snowball
+                // C. Apply Snowball to Priority
                 for (let d of currentDebts) {
                     if (d.balance > 0 && budget > 0) {
                         const extra = Math.min(d.balance, budget);
                         d.balance -= extra;
                         budget -= extra;
-                        snapshot.debts[d.name].paid += extra;
-                        
-                        if (d.balance === 0) {
-                            milestones.push({ name: d.name, month: currentMonth, date: dateStr, rate: d.interestRate });
-                        }
+                        snapshot.payments[d.name] += extra;
                     }
+                    
+                    snapshot.balances[d.name] = d.balance;
                     snapshot.total += d.balance;
+
+                    // Check for Payoff Milestone
+                    if (d.balance <= 0 && !milestones.find(m => m.name === d.name)) {
+                        milestones.push({ name: d.name, month: currentMonth, date: dateStr, rate: d.interestRate });
+                    }
                 }
 
                 timeline.push(snapshot);
@@ -322,42 +358,53 @@
             const finalDate = new Date(baseDate);
             finalDate.setMonth(baseDate.getMonth() + currentMonth - 1);
             document.getElementById('metric-date').innerText = `Payoff Date: ${finalDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
-            document.getElementById('metric-interest').innerText = `$${totalInterest.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('metric-total').innerText = `$${(initialPrincipal + totalInterest).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('metric-interest').innerText = `$${totalInterestPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('metric-total').innerText = `$${(initialPrincipal + totalInterestPaid).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             document.getElementById('metric-budget').innerText = `$${monthlyBudget.toLocaleString()}`;
+            document.getElementById('metric-flow-split').innerText = `1-14th: $${(extraPayment + firstHalfMins).toLocaleString()} | 15th+: $${secondHalfMins.toLocaleString()}`;
 
-            renderMilestones(milestones);
-            renderTimeline(timeline, debts.map(d => d.name));
+            renderMilestones(milestones, prioritizedDebts);
+            renderTimelineTransposed(timeline, prioritizedDebts.map(d => d.name));
             updateChart(timeline);
         }
 
-        function renderMilestones(milestones) {
-            document.getElementById('milestonesBody').innerHTML = milestones.map((m, i) => `
-                <tr class="hover:bg-slate-800/30 transition-colors">
+        function renderMilestones(milestones, allDebts) {
+            const payoffOrder = milestones.map(m => m.name);
+            const remaining = allDebts.filter(d => !payoffOrder.includes(d.name)).map(d => d.name);
+            const combined = [...milestones, ...remaining.map(name => ({ name, month: '--', date: '--', rate: allDebts.find(d => d.name === name).interestRate }))];
+
+            document.getElementById('milestonesBody').innerHTML = combined.map((m, i) => `
+                <tr class="hover:bg-slate-800/30 transition-colors border-b border-slate-700/30">
                     <td class="p-4 text-slate-500 font-mono">#${i + 1}</td>
                     <td class="p-4 font-bold text-white">${m.name}</td>
-                    <td class="p-4 text-center text-slate-400">${m.rate}%</td>
-                    <td class="p-4 text-center">Month ${m.month}</td>
-                    <td class="p-4 text-right text-emerald-400 font-bold">${m.date}</td>
+                    <td class="p-4 text-center text-slate-400 font-medium">${m.rate.toFixed(2)}%</td>
+                    <td class="p-4 text-center font-medium">${m.month}</td>
+                    <td class="p-4 text-right text-emerald-400 font-extrabold">${m.date}</td>
                 </tr>
             `).join('');
         }
 
-        function renderTimeline(timeline, debtNames) {
-            const header = document.getElementById('timelineHeader');
-            header.innerHTML = '<th class="p-3 bg-slate-800 sticky left-0 z-20">Month</th><th class="p-3 bg-slate-800 sticky left-[60px] z-20">Date</th>' + 
-                debtNames.map(name => `<th class="p-3 text-center border-l border-slate-700/50">${name}</th>`).join('');
+        function renderTimelineTransposed(timeline, debtNames) {
+            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600">Debt Name</th>` + 
+                timeline.map(step => `<th class="p-3 text-center border-l border-slate-700/50 min-w-[110px] border-b border-slate-600">${step.date}</th>`).join('') + `</tr>`;
+            document.getElementById('timelineHeader').innerHTML = headerRow;
 
-            document.getElementById('timelineBody').innerHTML = timeline.map(row => `
-                <tr class="hover:bg-slate-800/20">
-                    <td class="p-3 font-mono sticky left-0 bg-[#0f172a] z-10">${row.month}</td>
-                    <td class="p-3 font-bold text-slate-300 sticky left-[60px] bg-[#0f172a] z-10 whitespace-nowrap">${row.date}</td>
-                    ${debtNames.map(name => `
-                        <td class="p-3 text-center border-l border-slate-700/30">
-                            <div class="text-white">$${row.debts[name].bal.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                            <div class="text-[9px] text-emerald-500/70 font-bold">+$${row.debts[name].paid.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                        </td>
-                    `).join('')}
+            document.getElementById('timelineBody').innerHTML = debtNames.map(name => `
+                <tr class="hover:bg-slate-800/20 group">
+                    <td class="p-3 font-bold text-slate-200 sticky-col z-10 group-hover:bg-slate-800 transition-colors border-b border-slate-700/30 text-left">${name}</td>
+                    ${timeline.map(step => {
+                        const bal = step.balances[name];
+                        const paid = step.payments[name];
+                        const interest = step.interests[name];
+                        const isZero = bal <= 0 && (timeline[timeline.indexOf(step)-1]?.balances[name] > 0 || timeline.indexOf(step) === 0);
+                        return `
+                            <td class="p-3 text-center border-l border-slate-700/30 border-b border-slate-700/30 ${isZero ? 'bg-emerald-900/20' : ''}">
+                                <div class="${bal <= 0 ? 'text-emerald-500 font-bold' : 'text-slate-300'}">${bal <= 0 ? 'PAID' : '$' + Math.round(bal).toLocaleString()}</div>
+                                ${paid > 0 ? `<div class="text-[10px] text-emerald-400 font-bold mt-1">Pay $${Math.round(paid).toLocaleString()}</div>` : ''}
+                                ${interest > 0 ? `<div class="text-[9px] text-rose-500/80 font-medium italic">Int. $${Math.round(interest).toLocaleString()}</div>` : ''}
+                            </td>
+                        `;
+                    }).join('')}
                 </tr>
             `).join('');
         }
@@ -370,7 +417,7 @@
                 data: {
                     labels: timeline.map(d => d.date),
                     datasets: [{
-                        label: 'Remaining Debt',
+                        label: 'Total Debt',
                         data: timeline.map(d => d.total),
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
