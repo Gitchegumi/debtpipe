@@ -60,12 +60,23 @@
                         <i data-lucide="list" class="w-4 h-4"></i> Debt Data
                     </h2>
                     <div class="flex flex-col gap-3">
-                        <button onclick="document.getElementById('csvInput').click()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group">
-                            <i data-lucide="upload" class="w-4 h-4 group-hover:text-emerald-400"></i> Upload CSV/TSV
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="document.getElementById('csvInput').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold">
+                                <i data-lucide="upload" class="w-4 h-4 group-hover:text-emerald-400"></i> Upload
+                            </button>
+                            <button onclick="downloadTemplate()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold" title="Download CSV Template">
+                                <i data-lucide="download" class="w-4 h-4 group-hover:text-blue-400"></i>
+                            </button>
+                        </div>
                         <input type="file" id="csvInput" class="hidden" accept=".csv,.tsv,.txt" onchange="handleFileUpload(event)">
                         
-                        <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
+                        <div>
+                            <div class="flex justify-between items-center mb-1 px-1">
+                                <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Manual Entry Format</label>
+                                <span class="text-[9px] text-slate-600 italic">Name, Bal, Rate, Min, [Day]</span>
+                            </div>
+                            <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
+                        </div>
                         
                         <div class="flex gap-2 pt-2">
                             <button onclick="runSimulation()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40">
@@ -220,6 +231,20 @@
                 localStorage.clear();
                 location.reload();
             }
+        }
+
+        function downloadTemplate() {
+            const headers = "Name, Balance, Interest Rate (%), Min Payment, Due Day (Optional)\n";
+            const example = "Credit Card A, 5000, 18.99, 150, 15\nPersonal Loan, 12000, 8.5, 350, 1\nCar Loan, 8000, 5.0, 250, 28";
+            const blob = new Blob([headers + example], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'DebtPipe_Template.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         function runSimulation() {
