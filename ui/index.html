@@ -11,106 +11,150 @@
     <style>
         .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         body { background-color: #0f172a; color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .tab-active { border-bottom: 2px solid #10b981; color: #10b981; }
     </style>
 </head>
-<body class="p-4 md:p-8 min-h-screen">
-    <div class="max-w-6xl mx-auto">
+<body class="p-4 md:p-8 min-h-screen font-sans">
+    <div class="max-w-7xl mx-auto">
         <header class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-3">
-                <div class="p-2 bg-emerald-500 rounded-lg"><i data-lucide="banknote" class="text-white"></i></div>
+                <div class="p-2 bg-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20"><i data-lucide="banknote" class="text-white"></i></div>
                 <h1 class="text-3xl font-bold tracking-tight">DebtPipe</h1>
             </div>
-            <div class="text-sm text-slate-400">Unlimited Debt Simulator</div>
+            <div class="hidden sm:block text-sm text-slate-400 font-medium">Unlimited Debt Payoff Simulator</div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
             <!-- Left Column: Inputs -->
-            <div class="lg:col-span-1 space-y-6">
+            <div class="xl:col-span-1 space-y-6">
                 <section class="glass p-6 rounded-2xl">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <i data-lucide="settings-2" class="w-4 h-4"></i> Strategy
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
+                        <i data-lucide="settings-2" class="w-4 h-4"></i> Settings
                     </h2>
-                    <div class="space-y-4">
+                    <div class="space-y-4 text-sm font-medium text-slate-300">
                         <div>
-                            <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Method</label>
+                            <label class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold">Start Date</label>
+                            <input type="month" id="startDate" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold">Method</label>
                             <select id="method" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
-                                <option value="snowball">Debt Snowball (Smallest Balance First)</option>
-                                <option value="avalanche">Debt Avalanche (Highest Interest First)</option>
+                                <option value="snowball">Snowball (Smallest First)</option>
+                                <option value="avalanche">Avalanche (Highest Rate First)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Extra Monthly Payment ($)</label>
-                            <input type="number" id="extra" value="500" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                            <label class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold">Extra Monthly Payment ($)</label>
+                            <input type="number" id="extra" value="500" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-emerald-400">
                         </div>
                     </div>
                 </section>
 
                 <section class="glass p-6 rounded-2xl">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <i data-lucide="list" class="w-4 h-4"></i> Debt List
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
+                        <i data-lucide="list" class="w-4 h-4"></i> Debt Data
                     </h2>
-                    <p class="text-xs text-slate-400 mb-4">Paste your debts here (Name, Balance, Rate, Min). One per line.</p>
-                    <textarea id="debtData" rows="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all mb-4">
-Credit Card A, 4500, 18.99, 120
-Personal Loan, 12000, 8.5, 350
-Car Loan, 8000, 5.0, 250
-Student Loan, 25000, 4.2, 280</textarea>
-                    <div class="flex gap-2">
-                        <button onclick="runSimulation()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">
-                            <i data-lucide="play" class="w-4 h-4"></i> Run
+                    <div class="flex flex-col gap-3">
+                        <button onclick="document.getElementById('csvInput').click()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group">
+                            <i data-lucide="upload" class="w-4 h-4 group-hover:text-emerald-400"></i> Upload CSV/TSV
                         </button>
-                        <button onclick="exportToPDF()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2" title="Export to PDF">
-                            <i data-lucide="file-text" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="clearData()" class="bg-slate-800 hover:bg-rose-900/30 text-slate-400 hover:text-rose-400 py-3 px-4 rounded-lg transition-all" title="Clear All Data">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
+                        <input type="file" id="csvInput" class="hidden" accept=".csv,.tsv,.txt" onchange="handleFileUpload(event)">
+                        
+                        <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
+                        
+                        <div class="flex gap-2 pt-2">
+                            <button onclick="runSimulation()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40">
+                                <i data-lucide="play" class="w-4 h-4 fill-current"></i> Run
+                            </button>
+                            <button onclick="exportToPDF()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2" title="Export Plan to PDF">
+                                <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
+                            </button>
+                            <button onclick="clearData()" class="bg-slate-800 hover:bg-rose-900/30 text-slate-500 hover:text-rose-400 p-3 rounded-xl transition-all border border-slate-700" title="Clear All Data">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                 </section>
             </div>
 
             <!-- Right Column: Results -->
-            <div class="lg:col-span-2 space-y-6" id="report-content">
-                <!-- Metrics -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="glass p-6 rounded-2xl border-l-4 border-emerald-500">
-                        <div class="text-xs uppercase text-slate-400 font-semibold mb-1">Time to Freedom</div>
-                        <div class="text-3xl font-bold" id="metric-months">0 Months</div>
-                        <div class="text-sm text-slate-500" id="metric-years">0 Years</div>
+            <div class="xl:col-span-3 space-y-6" id="report-content">
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
+                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Time to Freedom</div>
+                        <div class="text-2xl font-bold" id="metric-months">0 Months</div>
+                        <div class="text-xs text-slate-400" id="metric-date">Payoff Date: --</div>
                     </div>
-                    <div class="glass p-6 rounded-2xl border-l-4 border-rose-500">
-                        <div class="text-xs uppercase text-slate-400 font-semibold mb-1">Total Interest</div>
-                        <div class="text-3xl font-bold" id="metric-interest">$0.00</div>
-                        <div class="text-sm text-slate-500">Paid to banks</div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-amber-500">
+                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Interest</div>
+                        <div class="text-2xl font-bold text-amber-400" id="metric-interest">$0.00</div>
+                        <div class="text-xs text-slate-400">Paid to banks</div>
                     </div>
-                    <div class="glass p-6 rounded-2xl border-l-4 border-blue-500">
-                        <div class="text-xs uppercase text-slate-400 font-semibold mb-1">Total Cost</div>
-                        <div class="text-3xl font-bold" id="metric-total">$0.00</div>
-                        <div class="text-sm text-slate-500">Principal + Interest</div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-rose-500">
+                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Cost</div>
+                        <div class="text-2xl font-bold text-rose-400" id="metric-total">$0.00</div>
+                        <div class="text-xs text-slate-400">Total volume</div>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
+                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Monthly Flow</div>
+                        <div class="text-2xl font-bold text-blue-400" id="metric-budget">$0.00</div>
+                        <div class="text-xs text-slate-400">Fixed monthly commitment</div>
                     </div>
                 </div>
 
-                <!-- Chart -->
-                <section class="glass p-6 rounded-2xl h-[400px]">
+                <!-- Main Chart -->
+                <section class="glass p-6 rounded-2xl h-[350px]">
                     <canvas id="payoffChart"></canvas>
                 </section>
 
-                <!-- Schedule Table -->
-                <section class="glass p-6 rounded-2xl">
-                    <h2 class="text-lg font-semibold mb-4">Payoff Milestones</h2>
-                    <div class="overflow-hidden rounded-xl border border-slate-700">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-800 text-slate-300">
-                                <tr>
-                                    <th class="p-3 font-semibold">Priority</th>
-                                    <th class="p-3 font-semibold">Debt Name</th>
-                                    <th class="p-3 font-semibold text-right">Payoff Month</th>
-                                </tr>
-                            </thead>
-                            <tbody id="milestonesBody" class="divide-y divide-slate-700">
-                                <!-- Dynamic rows -->
-                            </tbody>
-                        </table>
+                <!-- Schedule Section -->
+                <section class="glass rounded-2xl overflow-hidden">
+                    <div class="border-b border-slate-700/50 flex bg-slate-800/30">
+                        <button onclick="switchTab('milestones')" id="tab-milestones" class="p-4 px-6 text-sm font-bold transition-all tab-active">Milestones</button>
+                        <button onclick="switchTab('timeline')" id="tab-timeline" class="p-4 px-6 text-sm font-bold text-slate-400 hover:text-white transition-all">Full Timeline</button>
+                    </div>
+
+                    <!-- Milestones View -->
+                    <div id="view-milestones" class="p-0">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm border-collapse">
+                                <thead class="bg-slate-800/50 text-slate-400 uppercase text-[10px] tracking-widest">
+                                    <tr>
+                                        <th class="p-4 font-bold">Priority</th>
+                                        <th class="p-4 font-bold">Debt Name</th>
+                                        <th class="p-4 font-bold text-center">Interest Rate</th>
+                                        <th class="p-4 font-bold text-center">Payoff Month</th>
+                                        <th class="p-4 font-bold text-right">Payoff Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="milestonesBody" class="divide-y divide-slate-700/50 text-slate-300">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Timeline View -->
+                    <div id="view-timeline" class="p-0 hidden">
+                        <div class="overflow-auto max-h-[600px]">
+                            <table class="w-full text-left text-xs border-collapse sticky-header">
+                                <thead class="bg-slate-800 text-slate-400 uppercase text-[10px] tracking-widest sticky top-0 z-10 shadow-lg">
+                                    <tr id="timelineHeader">
+                                        <th class="p-3 bg-slate-800">Month</th>
+                                        <th class="p-3 bg-slate-800">Date</th>
+                                        <!-- Dynamic Debt Headers -->
+                                    </tr>
+                                </thead>
+                                <tbody id="timelineBody" class="divide-y divide-slate-700/50 text-slate-400">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -119,35 +163,64 @@ Student Loan, 25000, 4.2, 280</textarea>
 
     <script>
         let chartInstance = null;
+        let simulationResults = null;
 
-        // Load persisted data on start
         window.onload = () => {
+            const now = new Date();
+            document.getElementById('startDate').value = now.toISOString().slice(0, 7);
+            
             const savedData = localStorage.getItem('debtpipe_data');
             const savedExtra = localStorage.getItem('debtpipe_extra');
             const savedMethod = localStorage.getItem('debtpipe_method');
+            const savedStart = localStorage.getItem('debtpipe_start');
             
             if (savedData) document.getElementById('debtData').value = savedData;
             if (savedExtra) document.getElementById('extra').value = savedExtra;
             if (savedMethod) document.getElementById('method').value = savedMethod;
+            if (savedStart) document.getElementById('startDate').value = savedStart;
             
             lucide.createIcons();
             runSimulation();
         };
 
-        function exportToPDF() {
-            const element = document.getElementById('report-content');
-            const opt = {
-                margin:       [10, 10],
-                filename:     'DebtPipe_Payoff_Plan.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, backgroundColor: '#0f172a' },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        function switchTab(view) {
+            const mTab = document.getElementById('tab-milestones');
+            const tTab = document.getElementById('tab-timeline');
+            const mView = document.getElementById('view-milestones');
+            const tView = document.getElementById('view-timeline');
+
+            if (view === 'milestones') {
+                mTab.classList.add('tab-active'); mTab.classList.remove('text-slate-400');
+                tTab.classList.remove('tab-active'); tTab.classList.add('text-slate-400');
+                mView.classList.remove('hidden');
+                tView.classList.add('hidden');
+            } else {
+                tTab.classList.add('tab-active'); tTab.classList.remove('text-slate-400');
+                mTab.classList.remove('tab-active'); mTab.classList.add('text-slate-400');
+                tView.classList.remove('hidden');
+                mView.classList.add('hidden');
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const rows = text.split(/\r?\n/).filter(r => r.trim());
+                const cleanData = rows.map(r => {
+                    const separator = r.includes('\t') ? '\t' : ',';
+                    return r.split(separator).map(cell => cell.trim().replace(/[$,]/g, '')).join(', ');
+                }).join('\n');
+                document.getElementById('debtData').value = cleanData;
+                runSimulation();
             };
-            html2pdf().set(opt).from(element).save();
+            reader.readAsText(file);
         }
 
         function clearData() {
-            if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
+            if (confirm("Clear all data and reset?")) {
                 localStorage.clear();
                 location.reload();
             }
@@ -157,44 +230,56 @@ Student Loan, 25000, 4.2, 280</textarea>
             const rawData = document.getElementById('debtData').value;
             const extraPayment = parseFloat(document.getElementById('extra').value) || 0;
             const method = document.getElementById('method').value;
+            const startVal = document.getElementById('startDate').value;
 
-            // Persist
             localStorage.setItem('debtpipe_data', rawData);
             localStorage.setItem('debtpipe_extra', extraPayment);
             localStorage.setItem('debtpipe_method', method);
+            localStorage.setItem('debtpipe_start', startVal);
 
-            // 1. Parse Data
+            const baseDate = new Date(startVal + '-01');
+
+            // 1. Parse
             const debts = rawData.trim().split('\n').map(line => {
-                const [name, balance, rate, min] = line.split(',').map(s => s.trim());
+                const parts = line.split(',').map(s => s.trim());
                 return {
-                    name,
-                    balance: parseFloat(balance),
-                    interestRate: parseFloat(rate),
-                    minPayment: parseFloat(min)
+                    name: parts[0],
+                    balance: parseFloat(parts[1]),
+                    interestRate: parseFloat(parts[2]),
+                    minPayment: parseFloat(parts[3]),
+                    dueDay: parseInt(parts[4]) || 1
                 };
             }).filter(d => !isNaN(d.balance));
 
             // 2. Sort
+            const sortedDebts = [...debts];
             if (method === "snowball") {
-                debts.sort((a, b) => a.balance - b.balance);
+                sortedDebts.sort((a, b) => a.balance - b.balance);
             } else {
-                debts.sort((a, b) => b.interestRate - a.interestRate);
+                sortedDebts.sort((a, b) => b.interestRate - a.interestRate);
             }
 
             // 3. Simulate
-            const dataPoints = [{ month: 0, balance: debts.reduce((sum, d) => sum + d.balance, 0) }];
-            const milestones = [];
-            const initialPrincipal = dataPoints[0].balance;
-            let totalInterest = 0;
             let currentMonth = 0;
-            let currentDebts = JSON.parse(JSON.stringify(debts));
-            const monthlyBudget = extraPayment + currentDebts.reduce((sum, d) => sum + d.minPayment, 0);
+            let totalInterest = 0;
+            const initialPrincipal = debts.reduce((sum, d) => sum + d.balance, 0);
+            const monthlyBudget = extraPayment + debts.reduce((sum, d) => sum + d.minPayment, 0);
+            
+            const timeline = [];
+            const milestones = [];
+            let currentDebts = JSON.parse(JSON.stringify(sortedDebts));
 
             while (currentDebts.some(d => d.balance > 0) && currentMonth < 600) {
                 currentMonth++;
                 let budget = monthlyBudget;
+                const monthDate = new Date(baseDate);
+                monthDate.setMonth(baseDate.getMonth() + currentMonth - 1);
+                const dateStr = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
 
-                // Accrue Interest
+                // Snapshot for timeline
+                const snapshot = { month: currentMonth, date: dateStr, debts: [], total: 0 };
+
+                // Interest
                 currentDebts.forEach(d => {
                     if (d.balance > 0) {
                         const interest = d.balance * ((d.interestRate / 100) / 12);
@@ -203,96 +288,115 @@ Student Loan, 25000, 4.2, 280</textarea>
                     }
                 });
 
-                // Pay Mins
+                // Mins
                 currentDebts.forEach(d => {
+                    let paid = 0;
                     if (d.balance > 0) {
-                        const pay = Math.min(d.balance, d.minPayment);
-                        d.balance -= pay;
-                        budget -= pay;
+                        paid = Math.min(d.balance, d.minPayment);
+                        d.balance -= paid;
+                        budget -= paid;
                     }
+                    snapshot.debts[d.name] = { bal: d.balance, paid: paid };
                 });
 
-                // Apply Snowball to Priority
+                // Snowball
                 for (let d of currentDebts) {
                     if (d.balance > 0 && budget > 0) {
-                        const pay = Math.min(d.balance, budget);
-                        d.balance -= pay;
-                        budget -= pay;
+                        const extra = Math.min(d.balance, budget);
+                        d.balance -= extra;
+                        budget -= extra;
+                        snapshot.debts[d.name].paid += extra;
                         
                         if (d.balance === 0) {
-                            milestones.push({ name: d.name, month: currentMonth });
+                            milestones.push({ name: d.name, month: currentMonth, date: dateStr, rate: d.interestRate });
                         }
                     }
+                    snapshot.total += d.balance;
                 }
 
-                dataPoints.push({ month: currentMonth, balance: currentDebts.reduce((sum, d) => sum + d.balance, 0) });
+                timeline.push(snapshot);
             }
 
-            // 4. Update UI
+            // UI Update
             document.getElementById('metric-months').innerText = `${currentMonth} Months`;
-            document.getElementById('metric-years').innerText = `${(currentMonth/12).toFixed(1)} Years`;
-            document.getElementById('metric-interest').innerText = `$${totalInterest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('metric-total').innerText = `$${(initialPrincipal + totalInterest).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const finalDate = new Date(baseDate);
+            finalDate.setMonth(baseDate.getMonth() + currentMonth - 1);
+            document.getElementById('metric-date').innerText = `Payoff Date: ${finalDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+            document.getElementById('metric-interest').innerText = `$${totalInterest.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('metric-total').innerText = `$${(initialPrincipal + totalInterest).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('metric-budget').innerText = `$${monthlyBudget.toLocaleString()}`;
 
-            updateMilestones(milestones);
-            updateChart(dataPoints);
+            renderMilestones(milestones);
+            renderTimeline(timeline, debts.map(d => d.name));
+            updateChart(timeline);
         }
 
-        function updateMilestones(milestones) {
-            const body = document.getElementById('milestonesBody');
-            body.innerHTML = milestones.map((m, i) => `
-                <tr class="hover:bg-slate-800/50 transition-colors">
-                    <td class="p-3 text-slate-500">#${i + 1}</td>
-                    <td class="p-3 font-medium">${m.name}</td>
-                    <td class="p-3 text-right text-emerald-400 font-mono">Month ${m.month}</td>
+        function renderMilestones(milestones) {
+            document.getElementById('milestonesBody').innerHTML = milestones.map((m, i) => `
+                <tr class="hover:bg-slate-800/30 transition-colors">
+                    <td class="p-4 text-slate-500 font-mono">#${i + 1}</td>
+                    <td class="p-4 font-bold text-white">${m.name}</td>
+                    <td class="p-4 text-center text-slate-400">${m.rate}%</td>
+                    <td class="p-4 text-center">Month ${m.month}</td>
+                    <td class="p-4 text-right text-emerald-400 font-bold">${m.date}</td>
                 </tr>
             `).join('');
         }
 
-        function updateChart(data) {
-            const ctx = document.getElementById('payoffChart').getContext('2d');
-            
-            if (chartInstance) chartInstance.destroy();
+        function renderTimeline(timeline, debtNames) {
+            const header = document.getElementById('timelineHeader');
+            header.innerHTML = '<th class="p-3 bg-slate-800 sticky left-0 z-20">Month</th><th class="p-3 bg-slate-800 sticky left-[60px] z-20">Date</th>' + 
+                debtNames.map(name => `<th class="p-3 text-center border-l border-slate-700/50">${name}</th>`).join('');
 
+            document.getElementById('timelineBody').innerHTML = timeline.map(row => `
+                <tr class="hover:bg-slate-800/20">
+                    <td class="p-3 font-mono sticky left-0 bg-[#0f172a] z-10">${row.month}</td>
+                    <td class="p-3 font-bold text-slate-300 sticky left-[60px] bg-[#0f172a] z-10 whitespace-nowrap">${row.date}</td>
+                    ${debtNames.map(name => `
+                        <td class="p-3 text-center border-l border-slate-700/30">
+                            <div class="text-white">$${row.debts[name].bal.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                            <div class="text-[9px] text-emerald-500/70 font-bold">+$${row.debts[name].paid.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                        </td>
+                    `).join('')}
+                </tr>
+            `).join('');
+        }
+
+        function updateChart(timeline) {
+            const ctx = document.getElementById('payoffChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.map(d => `Month ${d.month}`),
+                    labels: timeline.map(d => d.date),
                     datasets: [{
-                        label: 'Remaining Balance',
-                        data: data.map(d => d.balance),
+                        label: 'Remaining Debt',
+                        data: timeline.map(d => d.total),
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 0
+                        fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#94a3b8', callback: (val) => '$' + val.toLocaleString() }
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }
-                        }
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', callback: v => '$' + v.toLocaleString() } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b', autoSkip: true, maxTicksLimit: 12 } }
                     },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         }
 
-        // Init
-        lucide.createIcons();
-        runSimulation();
+        function exportToPDF() {
+            const element = document.getElementById('report-content');
+            html2pdf().set({
+                margin: [10, 5],
+                filename: 'DebtPipe_Report.pdf',
+                html2canvas: { scale: 2, backgroundColor: '#0f172a' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            }).from(element).save();
+        }
     </script>
 </body>
 </html>
