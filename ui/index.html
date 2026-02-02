@@ -275,15 +275,17 @@
                 monthDate.setMonth(baseDate.getMonth() + currentMonth - 1);
                 const dateStr = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
 
-                const snapshot = { month: currentMonth, date: dateStr, balances: {}, payments: {}, total: 0 };
+                const snapshot = { month: currentMonth, date: dateStr, balances: {}, payments: {}, interests: {}, total: 0 };
 
                 // A. Accrue Interest
                 currentDebts.forEach(d => {
+                    let interest = 0;
                     if (d.balance > 0) {
-                        const interest = d.balance * ((d.interestRate / 100) / 12);
+                        interest = d.balance * ((d.interestRate / 100) / 12);
                         totalInterest += interest;
                         d.balance += interest;
                     }
+                    snapshot.interests[d.name] = interest;
                 });
 
                 // B. Pay Minimums
@@ -366,11 +368,13 @@
                     ${timeline.map(step => {
                         const bal = step.balances[name];
                         const paid = step.payments[name];
+                        const interest = step.interests[name];
                         const isZero = bal === 0 && (timeline[timeline.indexOf(step)-1]?.balances[name] > 0 || timeline.indexOf(step) === 0);
                         return `
                             <td class="p-3 text-center border-l border-slate-700/30 ${isZero ? 'bg-emerald-900/20' : ''}">
                                 <div class="${bal === 0 ? 'text-emerald-500 font-bold' : 'text-slate-300'}">${bal === 0 ? 'PAID' : '$' + bal.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                                ${paid > 0 ? `<div class="text-[9px] text-emerald-500/60 font-bold">+$${paid.toLocaleString(undefined, {maximumFractionDigits:0})}</div>` : ''}
+                                ${paid > 0 ? `<div class="text-[9px] text-emerald-500 font-bold italic">Pay $${paid.toLocaleString(undefined, {maximumFractionDigits:0})}</div>` : ''}
+                                ${interest > 0 ? `<div class="text-[9px] text-rose-500 font-medium">Int. $${interest.toLocaleString(undefined, {maximumFractionDigits:0})}</div>` : ''}
                             </td>
                         `;
                     }).join('')}
