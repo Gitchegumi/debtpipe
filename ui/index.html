@@ -17,6 +17,25 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
         .tab-active { border-bottom: 2px solid #10b981; color: #10b981; }
         .sticky-col { position: sticky; left: 0; background: #0f172a; z-index: 10; }
+        
+        /* PDF specific styling - used only during export */
+        #pdf-render-area { 
+            position: absolute; 
+            left: -9999px; 
+            top: 0; 
+            width: 1100px; /* Adjusted for landscape */
+            background: #ffffff; 
+            color: #0f172a; 
+            padding: 40px;
+            font-family: sans-serif;
+        }
+        .pdf-metric-card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .pdf-table th { background: #f8fafc; color: #64748b; font-size: 10px; text-transform: uppercase; padding: 10px; border: 1px solid #e2e8f0; }
+        .pdf-table td { padding: 10px; border: 1px solid #e2e8f0; font-size: 11px; }
+        .pdf-timeline-table td { font-size: 8px; padding: 5px; text-align: center; }
+        .pdf-row-avoid { page-break-inside: avoid !important; }
+        .pdf-page-break { page-break-before: always; }
     </style>
 </head>
 <body class="p-4 md:p-8 min-h-screen font-sans">
@@ -61,10 +80,10 @@
                     </h2>
                     <div class="flex flex-col gap-3">
                         <div class="flex gap-2">
-                            <button onclick="document.getElementById('csvInput').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold">
+                            <button onclick="document.getElementById('csvInput').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold text-white">
                                 <i data-lucide="upload" class="w-4 h-4 group-hover:text-emerald-400"></i> Upload
                             </button>
-                            <button onclick="downloadTemplate()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold" title="Download CSV Template">
+                            <button onclick="downloadTemplate()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold text-white" title="Download CSV Template">
                                 <i data-lucide="download" class="w-4 h-4 group-hover:text-blue-400"></i>
                             </button>
                         </div>
@@ -75,7 +94,7 @@
                                 <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Manual Entry Format</label>
                                 <span class="text-[9px] text-slate-600 italic">Name, Bal, Rate, Min, [Day]</span>
                             </div>
-                            <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
+                            <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-white" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
                         </div>
                         
                         <div class="flex gap-2 pt-2">
@@ -85,7 +104,7 @@
                             <button onclick="exportToPDF()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2" title="Export Plan to PDF">
                                 <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
                             </button>
-                            <button onclick="clearData()" class="bg-slate-800 hover:bg-rose-900/30 text-slate-500 hover:text-rose-400 p-3 rounded-xl transition-all border border-slate-700" title="Clear All Data">
+                            <button onclick="clearData()" class="bg-slate-800 hover:bg-rose-900/30 text-slate-500 hover:text-rose-400 p-3 rounded-xl transition-all border border-slate-700 text-white" title="Clear All Data">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -97,22 +116,22 @@
             <div class="xl:col-span-3 space-y-6" id="report-content">
                 <!-- Metrics Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500 text-left">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Time to Freedom</div>
                         <div class="text-2xl font-bold text-white" id="metric-months">0 Months</div>
                         <div class="text-xs text-slate-400" id="metric-date">Payoff Date: --</div>
                     </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-amber-500">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-amber-500 text-left">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Interest</div>
                         <div class="text-2xl font-bold text-amber-400" id="metric-interest">$0.00</div>
                         <div class="text-xs text-slate-400">Paid to banks</div>
                     </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-rose-500">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-rose-500 text-left">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Cost</div>
                         <div class="text-2xl font-bold text-rose-400" id="metric-total">$0.00</div>
                         <div class="text-xs text-slate-400">Principal + Interest</div>
                     </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-blue-500 text-left">
                         <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Monthly Flow</div>
                         <div class="text-2xl font-bold text-blue-400" id="metric-budget">$0.00</div>
                         <div class="text-[10px] text-slate-400" id="metric-flow-split">Split: --</div>
@@ -169,8 +188,12 @@
         </div>
     </div>
 
+    <!-- Hidden Area for PDF Generation -->
+    <div id="pdf-render-area"></div>
+
     <script>
         let chartInstance = null;
+        let lastResult = null;
 
         window.onload = () => {
             const now = new Date();
@@ -239,12 +262,8 @@
             const blob = new Blob([headers + example], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.setAttribute('hidden', '');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'DebtPipe_Template.csv');
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            a.setAttribute('hidden', ''); a.setAttribute('href', url); a.setAttribute('download', 'DebtPipe_Template.csv');
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
         function runSimulation() {
@@ -258,15 +277,12 @@
             localStorage.setItem('debtpipe_method', method);
             localStorage.setItem('debtpipe_start', startVal);
 
-            const baseDate = new Date(startVal + '-01T12:00:00'); // Midday to avoid TZ issues
+            const baseDate = new Date(startVal + '-01T12:00:00');
 
-            // 1. Parse
             const debts = rawData.trim().split('\n').map(line => {
                 const parts = line.split(',').map(s => s.trim());
                 let rate = parseFloat(parts[2]);
-                // Smart conversion: if < 1, assume decimal (0.18 -> 18%), if > 1, assume percent (18 -> 18%)
                 if (rate < 1 && rate > 0) rate = rate * 100;
-
                 return {
                     name: parts[0],
                     balance: parseFloat(parts[1]),
@@ -278,12 +294,10 @@
 
             if (debts.length === 0) return;
 
-            // Calculate Flow Split (1-14, 15-End)
             const firstHalfMins = debts.filter(d => d.dueDay <= 14).reduce((sum, d) => sum + d.minPayment, 0);
             const secondHalfMins = debts.filter(d => d.dueDay > 14).reduce((sum, d) => sum + d.minPayment, 0);
             const monthlyBudget = extraPayment + firstHalfMins + secondHalfMins;
 
-            // 2. Sort for Priority
             const prioritizedDebts = [...debts];
             if (method === "snowball") {
                 prioritizedDebts.sort((a, b) => a.balance - b.balance);
@@ -291,14 +305,12 @@
                 prioritizedDebts.sort((a, b) => b.interestRate - a.interestRate);
             }
 
-            // 3. Simulate
             let currentMonth = 0;
             let totalInterestPaid = 0;
             const initialPrincipal = debts.reduce((sum, d) => sum + d.balance, 0);
             
             const timeline = [];
             const milestones = [];
-            
             let currentDebts = JSON.parse(JSON.stringify(prioritizedDebts));
 
             while (currentDebts.some(d => d.balance > 0) && currentMonth < 600) {
@@ -310,7 +322,6 @@
 
                 const snapshot = { month: currentMonth, date: dateStr, balances: {}, payments: {}, interests: {}, total: 0 };
 
-                // A. Accrue Interest
                 currentDebts.forEach(d => {
                     let interest = 0;
                     if (d.balance > 0) {
@@ -321,7 +332,6 @@
                     snapshot.interests[d.name] = interest;
                 });
 
-                // B. Pay Minimums
                 currentDebts.forEach(d => {
                     let paid = 0;
                     if (d.balance > 0) {
@@ -332,7 +342,6 @@
                     snapshot.payments[d.name] = paid;
                 });
 
-                // C. Apply Snowball to Priority
                 for (let d of currentDebts) {
                     if (d.balance > 0 && budget > 0) {
                         const extra = Math.min(d.balance, budget);
@@ -340,31 +349,38 @@
                         budget -= extra;
                         snapshot.payments[d.name] += extra;
                     }
-                    
                     snapshot.balances[d.name] = d.balance;
                     snapshot.total += d.balance;
-
-                    // Check for Payoff Milestone
                     if (d.balance <= 0 && !milestones.find(m => m.name === d.name)) {
                         milestones.push({ name: d.name, month: currentMonth, date: dateStr, rate: d.interestRate });
                     }
                 }
-
                 timeline.push(snapshot);
             }
 
-            // UI Update
+            lastResult = {
+                months: currentMonth,
+                dateStr: new Date(baseDate.setMonth(baseDate.getMonth() + currentMonth - 1)).toLocaleString('default', { month: 'long', year: 'numeric' }),
+                interest: totalInterestPaid,
+                total: initialPrincipal + totalInterestPaid,
+                budget: monthlyBudget,
+                split: `1-14th: $${(extraPayment + firstHalfMins).toLocaleString()} | 15th+: $${secondHalfMins.toLocaleString()}`,
+                milestones: milestones,
+                timeline: timeline,
+                debtNames: prioritizedDebts.map(d => d.name),
+                method: method,
+                extra: extraPayment
+            };
+
             document.getElementById('metric-months').innerText = `${currentMonth} Months`;
-            const finalDate = new Date(baseDate);
-            finalDate.setMonth(baseDate.getMonth() + currentMonth - 1);
-            document.getElementById('metric-date').innerText = `Payoff Date: ${finalDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+            document.getElementById('metric-date').innerText = `Payoff Date: ${lastResult.dateStr}`;
             document.getElementById('metric-interest').innerText = `$${totalInterestPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('metric-total').innerText = `$${(initialPrincipal + totalInterestPaid).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('metric-total').innerText = `$${lastResult.total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             document.getElementById('metric-budget').innerText = `$${monthlyBudget.toLocaleString()}`;
-            document.getElementById('metric-flow-split').innerText = `1-14th: $${(extraPayment + firstHalfMins).toLocaleString()} | 15th+: $${secondHalfMins.toLocaleString()}`;
+            document.getElementById('metric-flow-split').innerText = lastResult.split;
 
             renderMilestones(milestones, prioritizedDebts);
-            renderTimelineTransposed(timeline, prioritizedDebts.map(d => d.name));
+            renderTimelineTransposed(timeline, lastResult.debtNames);
             updateChart(timeline);
         }
 
@@ -374,7 +390,7 @@
             const combined = [...milestones, ...remaining.map(name => ({ name, month: '--', date: '--', rate: allDebts.find(d => d.name === name).interestRate }))];
 
             document.getElementById('milestonesBody').innerHTML = combined.map((m, i) => `
-                <tr class="hover:bg-slate-800/30 transition-colors border-b border-slate-700/30">
+                <tr class="hover:bg-slate-800/30 border-b border-slate-700/30">
                     <td class="p-4 text-slate-500 font-mono">#${i + 1}</td>
                     <td class="p-4 font-bold text-white">${m.name}</td>
                     <td class="p-4 text-center text-slate-400 font-medium">${m.rate.toFixed(2)}%</td>
@@ -385,8 +401,8 @@
         }
 
         function renderTimelineTransposed(timeline, debtNames) {
-            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600">Debt Name</th>` + 
-                timeline.map(step => `<th class="p-3 text-center border-l border-slate-700/50 min-w-[110px] border-b border-slate-600">${step.date}</th>`).join('') + `</tr>`;
+            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600 text-left">Debt Name</th>` + 
+                timeline.map(step => `<th class="p-3 text-center border-l border-slate-700/50 min-w-[110px] border-b border-slate-600 text-slate-400">${step.date}</th>`).join('') + `</tr>`;
             document.getElementById('timelineHeader').innerHTML = headerRow;
 
             document.getElementById('timelineBody').innerHTML = debtNames.map(name => `
@@ -417,11 +433,8 @@
                 data: {
                     labels: timeline.map(d => d.date),
                     datasets: [{
-                        label: 'Total Debt',
-                        data: timeline.map(d => d.total),
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0
+                        label: 'Total Debt', data: timeline.map(d => d.total), borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0
                     }]
                 },
                 options: {
@@ -436,13 +449,105 @@
         }
 
         function exportToPDF() {
-            const element = document.getElementById('report-content');
-            html2pdf().set({
+            if (!lastResult) return alert("Please run simulation first.");
+            const area = document.getElementById('pdf-render-area');
+            
+            area.innerHTML = `
+                <div class="pdf-container">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 30px;">
+                        <div>
+                            <h1 style="font-size: 32pt; font-weight: 900; margin: 0; line-height: 1;">DebtPipe</h1>
+                            <p style="font-size: 12pt; font-weight: bold; color: #10b981; text-transform: uppercase; margin: 5px 0 0 0; letter-spacing: 2px;">by Gitchegumi</p>
+                        </div>
+                        <div style="text-align: right; color: #64748b; font-size: 10pt;">
+                            <p style="margin: 0;">Report Generated: ${new Date().toLocaleDateString()}</p>
+                            <p style="margin: 2px 0 0 0;">Strategy: ${lastResult.method.toUpperCase()} | Extra: $${lastResult.extra}/mo</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; margin-bottom: 40px;">
+                        <div class="pdf-metric-card" style="flex: 1; border-left: 4px solid #10b981;">
+                            <div style="font-size: 8pt; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Time to Freedom</div>
+                            <div style="font-size: 18pt; font-weight: bold;">${lastResult.months} Months</div>
+                            <div style="font-size: 9pt; color: #64748b;">Target: ${lastResult.dateStr}</div>
+                        </div>
+                        <div class="pdf-metric-card" style="flex: 1; border-left: 4px solid #f59e0b;">
+                            <div style="font-size: 8pt; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Total Interest</div>
+                            <div style="font-size: 18pt; font-weight: bold; color: #d97706;">$${Math.round(lastResult.interest).toLocaleString()}</div>
+                            <div style="font-size: 9pt; color: #64748b;">Paid to banks</div>
+                        </div>
+                        <div class="pdf-metric-card" style="flex: 1; border-left: 4px solid #ef4444;">
+                            <div style="font-size: 8pt; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Total Cost</div>
+                            <div style="font-size: 18pt; font-weight: bold;">$${Math.round(lastResult.total).toLocaleString()}</div>
+                            <div style="font-size: 9pt; color: #64748b;">Principal + Interest</div>
+                        </div>
+                        <div class="pdf-metric-card" style="flex: 1; border-left: 4px solid #3b82f6;">
+                            <div style="font-size: 8pt; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Monthly Flow</div>
+                            <div style="font-size: 18pt; font-weight: bold;">$${Math.round(lastResult.budget).toLocaleString()}</div>
+                            <div style="font-size: 8pt; color: #64748b;">${lastResult.split}</div>
+                        </div>
+                    </div>
+
+                    <h2 style="font-size: 16pt; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Payoff Milestones</h2>
+                    <table class="pdf-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">Order</th>
+                                <th style="text-align: left;">Debt Name</th>
+                                <th style="text-align: center;">Rate</th>
+                                <th style="text-align: center;">Month #</th>
+                                <th style="text-align: right;">Payoff Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${lastResult.milestones.map((m, i) => `
+                                <tr class="pdf-row-avoid">
+                                    <td style="color: #94a3b8;">#${i+1}</td>
+                                    <td style="font-weight: bold;">${m.name}</td>
+                                    <td style="text-align: center;">${m.rate.toFixed(2)}%</td>
+                                    <td style="text-align: center;">Month ${m.month}</td>
+                                    <td style="text-align: right; font-weight: bold; color: #059669;">${m.date}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <div class="pdf-page-break"></div>
+                    <h2 style="font-size: 16pt; font-weight: bold; margin-top: 40px; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Full Payoff Timeline View</h2>
+                    <table class="pdf-table pdf-timeline-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; width: 120px;">Debt Name</th>
+                                ${lastResult.timeline.map(step => `<th>${step.date}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${lastResult.debtNames.map(name => `
+                                <tr class="pdf-row-avoid">
+                                    <td style="text-align: left; font-weight: bold; background: #f8fafc;">${name}</td>
+                                    ${lastResult.timeline.map(step => {
+                                        const bal = step.balances[name];
+                                        const isPaid = bal <= 0 && (lastResult.timeline[lastResult.timeline.indexOf(step)-1]?.balances[name] > 0 || lastResult.timeline.indexOf(step) === 0);
+                                        return `<td style="${isPaid ? 'background: #ecfdf5; color: #059669; font-weight: bold;' : ''}">${bal <= 0 ? 'PAID' : '$' + Math.round(bal).toLocaleString()}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            const opt = {
                 margin: [10, 5],
-                filename: 'DebtPipe_Report.pdf',
-                html2canvas: { scale: 2, backgroundColor: '#0f172a' },
+                filename: 'DebtPipe_Payoff_Report.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, backgroundColor: '#ffffff' },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-            }).from(element).save();
+            };
+
+            html2pdf().set(opt).from(area).save().then(() => {
+                area.innerHTML = '';
+            });
         }
     </script>
 </body>
