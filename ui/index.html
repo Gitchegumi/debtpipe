@@ -1,381 +1,1021 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DebtPipe 💸</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        body { background-color: #0f172a; color: #f8fafc; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .tab-active { border-bottom: 2px solid #10b981; color: #10b981; }
-        .sticky-col { position: sticky; left: 0; background: #0f172a; z-index: 10; }
+      .glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      body {
+        background-color: #0f172a;
+        color: #f8fafc;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+      .tab-active {
+        border-bottom: 2px solid #10b981;
+        color: #10b981;
+      }
+      .sticky-col {
+        position: sticky;
+        left: 0;
+        background: #0f172a;
+        z-index: 10;
+      }
+      /* Interactive cell styles */
+      .cell-paid {
+        background: rgba(5, 123, 150, 0.08);
+      }
+      .cell-wrapper {
+        position: relative;
+        padding-top: 20px !important;
+      }
+      .cell-checkbox {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        accent-color: #053396;
+        cursor: pointer;
+        width: 13px;
+        height: 13px;
+      }
+      .inline-edit {
+        width: 72px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        color: #10b981;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 10px;
+        text-align: center;
+        outline: none;
+      }
+      .inline-edit:focus {
+        border-color: #10b981;
+      }
+      .month-flow {
+        font-size: 9px;
+        color: #60a5fa;
+        font-weight: 600;
+        margin-top: 2px;
+      }
     </style>
-</head>
-<body class="p-4 md:p-8 min-h-screen font-sans">
+  </head>
+  <body class="p-4 md:p-8 min-h-screen font-sans">
     <div class="max-w-7xl mx-auto">
-        <header class="flex items-center justify-between mb-8">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20"><i data-lucide="banknote" class="text-white"></i></div>
-                <h1 class="text-3xl font-bold tracking-tight text-white">DebtPipe</h1>
-            </div>
-            <div class="hidden sm:block text-sm text-slate-400 font-medium">Unlimited Debt Payoff Simulator</div>
-        </header>
-
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <!-- Left Column: Inputs -->
-            <div class="xl:col-span-1 space-y-6">
-                <section class="glass p-6 rounded-2xl">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
-                        <i data-lucide="settings-2" class="w-4 h-4"></i> Settings
-                    </h2>
-                    <div class="space-y-4 text-sm font-medium text-slate-300">
-                        <div>
-                            <label class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold">Start Date</label>
-                            <input type="month" id="startDate" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold">Method</label>
-                            <select id="method" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
-                                <option value="snowball">Snowball (Smallest First)</option>
-                                <option value="avalanche">Avalanche (Highest Rate First)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold">Extra Monthly Payment ($)</label>
-                            <input type="number" id="extra" value="500" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-emerald-400">
-                        </div>
-                    </div>
-                </section>
-
-                <section class="glass p-6 rounded-2xl">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
-                        <i data-lucide="list" class="w-4 h-4"></i> Debt Data
-                    </h2>
-                    <div class="flex flex-col gap-3">
-                        <div class="flex gap-2">
-                            <button onclick="document.getElementById('csvInput').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold text-white">
-                                <i data-lucide="upload" class="w-4 h-4 group-hover:text-emerald-400"></i> Upload
-                            </button>
-                            <button onclick="downloadTemplate()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold text-white" title="Download CSV Template">
-                                <i data-lucide="download" class="w-4 h-4 group-hover:text-blue-400"></i>
-                            </button>
-                        </div>
-                        <input type="file" id="csvInput" class="hidden" accept=".csv,.tsv,.txt" onchange="handleFileUpload(event)">
-                        
-                        <div>
-                            <div class="flex justify-between items-center mb-1 px-1">
-                                <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Manual Entry Format</label>
-                                <span class="text-[9px] text-slate-600 italic">Name, Bal, Rate, Min, [Day]</span>
-                            </div>
-                            <textarea id="debtData" rows="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-white" placeholder="Name, Balance, Rate, Min, [DueDay]"></textarea>
-                        </div>
-                        
-                        <div class="flex gap-2 pt-2">
-                            <button onclick="runSimulation()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40">
-                                <i data-lucide="play" class="w-4 h-4 fill-current"></i> Run
-                            </button>
-                            <button onclick="exportToPDF()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2" title="Export Plan to PDF">
-                                <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
-                            </button>
-                            <button onclick="clearData()" class="bg-slate-800 hover:bg-rose-900/30 text-slate-500 hover:text-rose-400 p-3 rounded-xl transition-all border border-slate-700 text-white" title="Clear All Data">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- Right Column: Results -->
-            <div class="xl:col-span-3 space-y-6">
-                <!-- Metrics Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
-                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Time to Freedom</div>
-                        <div class="text-2xl font-bold text-white" id="metric-months">0 Months</div>
-                        <div class="text-xs text-slate-400" id="metric-date">Payoff Date: --</div>
-                    </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-amber-500">
-                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Interest</div>
-                        <div class="text-2xl font-bold text-amber-400" id="metric-interest">$0.00</div>
-                        <div class="text-xs text-slate-400">Paid to banks</div>
-                    </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-rose-500">
-                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Total Cost</div>
-                        <div class="text-2xl font-bold text-rose-400" id="metric-total">$0.00</div>
-                        <div class="text-xs text-slate-400">Principal + Interest</div>
-                    </div>
-                    <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
-                        <div class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest">Monthly Flow</div>
-                        <div class="text-2xl font-bold text-blue-400" id="metric-budget">$0.00</div>
-                        <div class="text-[10px] text-slate-400" id="metric-flow-split">Split: --</div>
-                    </div>
-                </div>
-
-                <!-- Main Chart -->
-                <section class="glass p-6 rounded-2xl h-[350px]">
-                    <canvas id="payoffChart"></canvas>
-                </section>
-
-                <!-- Schedule Section -->
-                <section class="glass rounded-2xl overflow-hidden">
-                    <div class="border-b border-slate-700/50 flex bg-slate-800/30">
-                        <button onclick="switchTab('milestones')" id="tab-milestones" class="p-4 px-6 text-sm font-bold transition-all tab-active">Milestones</button>
-                        <button onclick="switchTab('timeline')" id="tab-timeline" class="p-4 px-6 text-sm font-bold text-slate-400 hover:text-white transition-all">Full Timeline View</button>
-                    </div>
-
-                    <!-- Milestones View -->
-                    <div id="view-milestones" class="p-0">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm border-collapse">
-                                <thead class="bg-slate-800/50 text-slate-400 uppercase text-[10px] tracking-widest font-bold">
-                                    <tr>
-                                        <th class="p-4">Payoff Order</th>
-                                        <th class="p-4">Debt Name</th>
-                                        <th class="p-4 text-center">Interest Rate</th>
-                                        <th class="p-4 text-center">Month #</th>
-                                        <th class="p-4 text-right">Target Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="milestonesBody" class="divide-y divide-slate-700/50 text-slate-300 text-center">
-                                    <!-- Dynamic -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Timeline View (Transposed) -->
-                    <div id="view-timeline" class="p-0 hidden">
-                        <div class="overflow-auto max-h-[600px]">
-                            <table class="w-full text-left text-xs border-collapse">
-                                <thead id="timelineHeader" class="bg-slate-800 text-slate-400 uppercase text-[10px] tracking-widest sticky top-0 z-20 text-center">
-                                    <!-- Month/Date Headers -->
-                                </thead>
-                                <tbody id="timelineBody" class="divide-y divide-slate-700/50 text-slate-400 text-center">
-                                    <!-- Rows: Debts, X-Axis: Months -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-            </div>
+      <header class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+          <div
+            class="p-2 bg-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20"
+          >
+            <img
+              src="../images/debt-pipe-logo.png"
+              alt="DebtPipe Logo"
+              class="w-16 h-16"
+            />
+          </div>
+          <h1 class="text-3xl font-bold tracking-tight text-white">DebtPipe</h1>
         </div>
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:block text-sm text-slate-400 font-medium">
+            Unlimited Debt Payoff Simulator
+          </div>
+        </div>
+      </header>
+
+      <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <!-- Left Column: Inputs -->
+        <div class="xl:col-span-1 space-y-6">
+          <section class="glass p-6 rounded-2xl">
+            <h2
+              class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400"
+            >
+              <i data-lucide="settings-2" class="w-4 h-4"></i> Settings
+            </h2>
+            <div class="space-y-4 text-sm font-medium text-slate-300">
+              <div>
+                <label
+                  class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold"
+                  >Start Date</label
+                >
+                <input
+                  type="month"
+                  id="startDate"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold"
+                  >Method</label
+                >
+                <select
+                  id="method"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                >
+                  <option value="snowball">Snowball (Smallest First)</option>
+                  <option value="avalanche">
+                    Avalanche (Highest Rate First)
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label
+                  class="block text-xs uppercase tracking-wider text-slate-500 mb-2 font-bold"
+                  >Extra Monthly Payment ($)</label
+                >
+                <input
+                  type="number"
+                  id="extra"
+                  value="500"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-emerald-400"
+                />
+              </div>
+              <div class="pt-2 border-t border-slate-700/50">
+                <button
+                  onclick="resetOverrides()"
+                  class="w-full bg-slate-800 hover:bg-rose-900/30 text-slate-400 hover:text-rose-400 text-xs font-bold py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 border border-slate-700"
+                >
+                  <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
+                  Overrides
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="glass p-6 rounded-2xl">
+            <h2
+              class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400"
+            >
+              <i data-lucide="list" class="w-4 h-4"></i> Debt Data
+            </h2>
+            <div class="flex flex-col gap-3">
+              <div class="flex gap-2">
+                <button
+                  onclick="document.getElementById('csvInput').click()"
+                  class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold text-white"
+                >
+                  <i
+                    data-lucide="upload"
+                    class="w-4 h-4 group-hover:text-emerald-400"
+                  ></i>
+                  Upload
+                </button>
+                <button
+                  onclick="downloadTemplate()"
+                  class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold text-white"
+                  title="Download CSV Template"
+                >
+                  <i
+                    data-lucide="download"
+                    class="w-4 h-4 group-hover:text-blue-400"
+                  ></i>
+                </button>
+              </div>
+
+              <!-- Budget Tool Bridge -->
+              <div class="flex gap-2">
+                <button
+                  onclick="sendSnowballToBudget()"
+                  class="flex-1 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-700/50 rounded-lg p-2.5 flex items-center justify-center gap-2 transition-all group text-xs font-bold text-emerald-300"
+                  title="Send snowball results to Budget Tool and open it"
+                >
+                  <i data-lucide="arrow-up-from-line" class="w-4 h-4"></i>
+                  Send to Budget Tool ↗
+                </button>
+              </div>
+              <div
+                id="budget-bridge-status"
+                class="text-xs text-emerald-400 min-h-[1rem]"
+              ></div>
+              <input
+                type="file"
+                id="csvInput"
+                class="hidden"
+                accept=".csv,.tsv,.txt"
+                onchange="handleFileUpload(event)"
+              />
+
+              <div>
+                <div class="flex justify-between items-center mb-1 px-1">
+                  <label
+                    class="text-[10px] uppercase tracking-widest text-slate-500 font-bold"
+                    >Manual Entry Format</label
+                  >
+                  <span class="text-[9px] text-slate-600 italic"
+                    >Name, Bal, Rate, Min, [Day], [Limit]</span
+                  >
+                </div>
+                <textarea
+                  id="debtData"
+                  rows="10"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-white"
+                  placeholder="Name, Balance, Rate, Min, [DueDay], [Limit]"
+                ></textarea>
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button
+                  onclick="runSimulation()"
+                  class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40"
+                >
+                  <i data-lucide="play" class="w-4 h-4 fill-current"></i> Run
+                </button>
+                <!-- Export dropdown -->
+                <div class="relative" id="exportMenuWrap">
+                  <button
+                    onclick="
+                      document
+                        .getElementById('exportMenu')
+                        .classList.toggle('hidden')
+                    "
+                    class="bg-slate-800 hover:bg-slate-600 text-white font-bold p-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                    title="Export"
+                  >
+                    <i
+                      data-lucide="download"
+                      class="w-4 h-4 text-emerald-400"
+                    ></i>
+                  </button>
+                  <div
+                    id="exportMenu"
+                    class="hidden absolute right-0 bottom-full mb-2 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden text-xs"
+                  >
+                    <button
+                      onclick="
+                        exportToPDF();
+                        document
+                          .getElementById('exportMenu')
+                          .classList.add('hidden');
+                      "
+                      class="w-full flex items-center gap-2 px-4 py-3 hover:bg-slate-700 text-slate-300 transition text-left"
+                    >
+                      <i
+                        data-lucide="file-text"
+                        class="w-3.5 h-3.5 text-emerald-400"
+                      ></i>
+                      Export as PDF
+                    </button>
+                    <button
+                      onclick="
+                        exportInputCSV();
+                        document
+                          .getElementById('exportMenu')
+                          .classList.add('hidden');
+                      "
+                      class="w-full flex items-center gap-2 px-4 py-3 hover:bg-slate-700 text-slate-300 transition text-left"
+                    >
+                      <i
+                        data-lucide="download"
+                        class="w-3.5 h-3.5 text-blue-400"
+                      ></i>
+                      Debt Data (CSV)
+                    </button>
+                    <button
+                      onclick="
+                        exportResultsCSV();
+                        document
+                          .getElementById('exportMenu')
+                          .classList.add('hidden');
+                      "
+                      class="w-full flex items-center gap-2 px-4 py-3 hover:bg-slate-700 text-slate-300 transition text-left"
+                    >
+                      <i
+                        data-lucide="table-2"
+                        class="w-3.5 h-3.5 text-purple-400"
+                      ></i>
+                      Payoff Schedule (CSV)
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onclick="clearData()"
+                  class="bg-slate-800 hover:bg-rose-900/30 text-slate-500 hover:text-rose-400 p-3 rounded-xl transition-all border border-slate-700 text-white"
+                  title="Clear All Data"
+                >
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right Column: Results -->
+        <div class="xl:col-span-3 space-y-6">
+          <!-- Metrics Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
+              <div
+                class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest"
+              >
+                Time to Freedom
+              </div>
+              <div class="text-2xl font-bold text-white" id="metric-months">
+                0 Months
+              </div>
+              <div class="text-xs text-slate-400" id="metric-date">
+                Payoff Date: --
+              </div>
+            </div>
+            <div class="glass p-5 rounded-2xl border-l-4 border-amber-500">
+              <div
+                class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest"
+              >
+                Total Interest
+              </div>
+              <div
+                class="text-2xl font-bold text-amber-400"
+                id="metric-interest"
+              >
+                $0.00
+              </div>
+              <div class="text-xs text-slate-400">Paid to banks</div>
+            </div>
+            <div class="glass p-5 rounded-2xl border-l-4 border-rose-500">
+              <div
+                class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest"
+              >
+                Total Cost
+              </div>
+              <div class="text-2xl font-bold text-rose-400" id="metric-total">
+                $0.00
+              </div>
+              <div class="text-xs text-slate-400">Principal + Interest</div>
+            </div>
+            <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
+              <div
+                class="text-[10px] uppercase text-slate-500 font-extrabold mb-1 tracking-widest"
+              >
+                Monthly Flow
+              </div>
+              <div class="text-2xl font-bold text-blue-400" id="metric-budget">
+                $0.00
+              </div>
+              <div class="text-[10px] text-slate-400" id="metric-flow-split">
+                Split: --
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Chart -->
+          <section class="glass p-6 rounded-2xl h-[350px]">
+            <canvas id="payoffChart"></canvas>
+          </section>
+
+          <!-- Schedule Section -->
+          <section class="glass rounded-2xl overflow-hidden">
+            <div class="border-b border-slate-700/50 flex bg-slate-800/30">
+              <button
+                onclick="switchTab('milestones')"
+                id="tab-milestones"
+                class="p-4 px-6 text-sm font-bold transition-all tab-active"
+              >
+                Milestones
+              </button>
+              <button
+                onclick="switchTab('timeline')"
+                id="tab-timeline"
+                class="p-4 px-6 text-sm font-bold text-slate-400 hover:text-white transition-all"
+              >
+                Full Timeline View
+              </button>
+            </div>
+
+            <!-- Milestones View -->
+            <div id="view-milestones" class="p-0">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                  <thead
+                    class="bg-slate-800/50 text-slate-400 uppercase text-[10px] tracking-widest font-bold"
+                  >
+                    <tr>
+                      <th class="p-4">Payoff Order</th>
+                      <th class="p-4">Debt Name</th>
+                      <th class="p-4 text-center">Interest Rate</th>
+                      <th class="p-4 text-center">Month #</th>
+                      <th class="p-4 text-right">Target Date</th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="milestonesBody"
+                    class="divide-y divide-slate-700/50 text-slate-300 text-center"
+                  >
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Timeline View (Transposed) -->
+            <div id="view-timeline" class="p-0 hidden">
+              <div class="overflow-auto max-h-[600px]">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead
+                    id="timelineHeader"
+                    class="bg-slate-800 text-slate-400 uppercase text-[10px] tracking-widest sticky top-0 z-20 text-center"
+                  >
+                    <!-- Month/Date Headers -->
+                  </thead>
+                  <tbody
+                    id="timelineBody"
+                    class="divide-y divide-slate-700/50 text-slate-400 text-center"
+                  >
+                    <!-- Rows: Debts, X-Axis: Months -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
 
     <script>
-        let chartInstance = null;
-        let lastResult = null; // Globally accessible for PDF
+      let chartInstance = null;
+      let lastResult = null; // Globally accessible for PDF
+      let interactiveOverrides = {}; // Key: "debtName|monthIdx", Value: { paid: bool, amountOverride: number|null }
+      let baselineTimeline = [];
+      let parsedDebtsCache = [];
+      let monthlyBudgetCache = 0;
 
-        window.onload = () => {
-            const now = new Date();
-            document.getElementById('startDate').value = now.toISOString().slice(0, 7);
-            
-            const savedData = localStorage.getItem('debtpipe_data');
-            const savedExtra = localStorage.getItem('debtpipe_extra');
-            const savedMethod = localStorage.getItem('debtpipe_method');
-            const savedStart = localStorage.getItem('debtpipe_start');
-            
-            if (savedData) document.getElementById('debtData').value = savedData;
-            if (savedExtra) document.getElementById('extra').value = savedExtra;
-            if (savedMethod) document.getElementById('method').value = savedMethod;
-            if (savedStart) document.getElementById('startDate').value = savedStart;
-            
-            lucide.createIcons();
-            runSimulation();
+      // Close data menu when clicking outside
+      document.addEventListener("click", (e) => {
+        const wrap = document.getElementById("exportMenuWrap");
+        if (wrap && !wrap.contains(e.target)) {
+          document.getElementById("exportMenu")?.classList.add("hidden");
+        }
+      });
+
+      function exportInputCSV() {
+        const raw = document.getElementById("debtData").value.trim();
+        if (!raw) {
+          alert("No debt data to export.");
+          return;
+        }
+        const header =
+          "Name,Balance,InterestRate,MinPayment,DueDay,CreditLimit\n";
+        const lines = raw.split("\n").map((line) => {
+          // Normalise to 6 columns
+          const parts = line.split(",").map((s) => s.trim());
+          while (parts.length < 6) parts.push("");
+          return parts
+            .slice(0, 6)
+            .map((p) => (p.includes(",") ? `"${p}"` : p))
+            .join(",");
+        });
+        const csv = header + lines.join("\n");
+        triggerDownload(csv, "debtpipe_debts.csv");
+      }
+
+      function exportResultsCSV() {
+        if (!lastResult || !parsedDebtsCache || parsedDebtsCache.length === 0) {
+          alert("Run the simulation first.");
+          return;
+        }
+        const timeline = buildInteractiveTimeline();
+        const names = lastResult.debtNames;
+        // Header row
+        const headers = [
+          "Month",
+          "Date",
+          "Total Balance",
+          ...names.flatMap((n) => [
+            `${n} Balance`,
+            `${n} Payment`,
+            `${n} Interest`,
+          ]),
+        ];
+        const rows = timeline.map((step) => [
+          step.month,
+          step.date,
+          step.total.toFixed(2),
+          ...names.flatMap((n) => [
+            (step.balances[n] ?? 0).toFixed(2),
+            (step.payments[n] ?? 0).toFixed(2),
+            (step.interests[n] ?? 0).toFixed(2),
+          ]),
+        ]);
+        const csv = [headers, ...rows]
+          .map((r) =>
+            r.map((c) => (String(c).includes(",") ? `"${c}"` : c)).join(","),
+          )
+          .join("\n");
+        triggerDownload(csv, "debtpipe_schedule.csv");
+      }
+
+      function triggerDownload(content, filename) {
+        const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      window.onload = () => {
+        const now = new Date();
+        document.getElementById("startDate").value = now
+          .toISOString()
+          .slice(0, 7);
+
+        const savedData = localStorage.getItem("debtpipe_data");
+        const savedExtra = localStorage.getItem("debtpipe_extra");
+        const savedMethod = localStorage.getItem("debtpipe_method");
+        const savedStart = localStorage.getItem("debtpipe_start");
+        const savedOverrides = localStorage.getItem("debtpipe_overrides");
+
+        if (savedData) document.getElementById("debtData").value = savedData;
+        if (savedExtra) document.getElementById("extra").value = savedExtra;
+        if (savedMethod) document.getElementById("method").value = savedMethod;
+        if (savedStart) document.getElementById("startDate").value = savedStart;
+        if (savedOverrides) {
+          try {
+            interactiveOverrides = JSON.parse(savedOverrides);
+          } catch (e) {
+            interactiveOverrides = {};
+          }
+        }
+
+        // Auto-import pending Budget Tool data (written before opening this tab)
+        const pendingBudgetData = localStorage.getItem(BUDGET_TO_DEBTPIPE_KEY);
+        if (pendingBudgetData && pendingBudgetData.trim()) {
+          document.getElementById("debtData").value = pendingBudgetData;
+          localStorage.removeItem(BUDGET_TO_DEBTPIPE_KEY);
+        }
+
+        lucide.createIcons();
+        runSimulation();
+      };
+
+      function switchTab(view) {
+        const mTab = document.getElementById("tab-milestones");
+        const tTab = document.getElementById("tab-timeline");
+        const mView = document.getElementById("view-milestones");
+        const tView = document.getElementById("view-timeline");
+
+        if (view === "milestones") {
+          mTab.classList.add("tab-active");
+          mTab.classList.remove("text-slate-400");
+          tTab.classList.remove("tab-active");
+          tTab.classList.add("text-slate-400");
+          mView.classList.remove("hidden");
+          tView.classList.add("hidden");
+        } else {
+          tTab.classList.add("tab-active");
+          tTab.classList.remove("text-slate-400");
+          mTab.classList.remove("tab-active");
+          mTab.classList.add("text-slate-400");
+          tView.classList.remove("hidden");
+          mView.classList.add("hidden");
+        }
+      }
+
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          const rows = text.split(/\r?\n/).filter((r) => r.trim());
+          const cleanData = rows
+            .map((r) => {
+              const separator = r.includes("\t") ? "\t" : ",";
+              return r
+                .split(separator)
+                .map((cell) => cell.trim().replace(/[$,]/g, ""))
+                .join(", ");
+            })
+            .join("\n");
+          document.getElementById("debtData").value = cleanData;
+          runSimulation();
+        };
+        reader.readAsText(file);
+      }
+
+      function clearData() {
+        if (confirm("Clear all data and reset?")) {
+          localStorage.clear();
+          location.reload();
+        }
+      }
+
+      const BUDGET_TO_DEBTPIPE_KEY = "gitchpage-budget-to-debtpipe";
+      const DEBTPIPE_TO_BUDGET_KEY = "gitchpage-debtpipe-to-budget";
+
+      function showBridgeStatus(msg, isError) {
+        const el = document.getElementById("budget-bridge-status");
+        if (!el) return;
+        el.textContent = msg;
+        el.style.color = isError ? "#f87171" : "#34d399";
+        setTimeout(() => {
+          el.textContent = "";
+        }, 4000);
+      }
+
+      function importFromBudget() {
+        const csv = localStorage.getItem(BUDGET_TO_DEBTPIPE_KEY);
+        if (!csv || !csv.trim()) {
+          showBridgeStatus(
+            "⚠ No Budget Tool data found. Send it from the Budget first.",
+            true,
+          );
+          return;
+        }
+        document.getElementById("debtData").value = csv;
+        showBridgeStatus(
+          "✓ Imported from Budget Tool! Running simulation...",
+          false,
+        );
+        runSimulation();
+      }
+
+      function sendSnowballToBudget() {
+        if (!parsedDebtsCache || parsedDebtsCache.length === 0) {
+          showBridgeStatus("⚠ Run the simulation first.", true);
+          return;
+        }
+        const payload = parsedDebtsCache.map((d) => ({
+          name: d.name,
+          minPayment: d.minPayment,
+          balance: d.balance,
+          interestRate: d.interestRate,
+          dueDay: d.dueDay,
+          creditLimit: d.creditLimit || 0,
+        }));
+        localStorage.setItem(DEBTPIPE_TO_BUDGET_KEY, JSON.stringify(payload));
+        window.open("/budget", "_blank");
+      }
+
+      function downloadTemplate() {
+        const headers =
+          "Name, Balance, Interest Rate (Decimal), Min Payment, Due Day (Optional), Credit Limit (Optional CC)\n";
+        const example =
+          "Credit Card A, 5000, 0.1899, 150, 15, 10000\nPersonal Loan, 12000, 0.085, 350, 1\nCar Loan, 8000, 0.05, 250, 28";
+        const blob = new Blob([headers + example], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.setAttribute("hidden", "");
+        a.setAttribute("href", url);
+        a.setAttribute("download", "DebtPipe_Template.csv");
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      function runSimulation() {
+        const rawData = document.getElementById("debtData").value;
+        const extraPayment =
+          parseFloat(document.getElementById("extra").value) || 0;
+        const method = document.getElementById("method").value;
+        const startVal = document.getElementById("startDate").value;
+
+        localStorage.setItem("debtpipe_data", rawData);
+        localStorage.setItem("debtpipe_extra", extraPayment);
+        localStorage.setItem("debtpipe_method", method);
+        localStorage.setItem("debtpipe_start", startVal);
+
+        const baseDate = new Date(startVal + "-01T12:00:00");
+
+        // 1. Parse
+        const debts = rawData
+          .trim()
+          .split("\n")
+          .map((line) => {
+            const parts = line.split(",").map((s) => s.trim());
+            let rate = parseFloat(parts[2]);
+            if (rate < 1 && rate > 0)
+              rate = parseFloat((rate * 100).toFixed(4));
+            else rate = parseFloat(rate.toFixed(4));
+            return {
+              name: parts[0],
+              balance: parseFloat(parts[1]),
+              interestRate: rate || 0,
+              minPayment: parseFloat(parts[3]),
+              dueDay: parseInt(parts[4]) || 1,
+              creditLimit: parseFloat(parts[5]) || 0,
+            };
+          })
+          .filter((d) => !isNaN(d.balance) && !isNaN(d.minPayment));
+
+        if (debts.length === 0) return;
+
+        const firstHalfMins = debts
+          .filter((d) => d.dueDay <= 14)
+          .reduce((sum, d) => sum + d.minPayment, 0);
+        const secondHalfMins = debts
+          .filter((d) => d.dueDay > 14)
+          .reduce((sum, d) => sum + d.minPayment, 0);
+        const monthlyBudget = extraPayment + firstHalfMins + secondHalfMins;
+
+        // 2. Sort
+        const prioritizedDebts = [...debts];
+        if (method === "snowball") {
+          prioritizedDebts.sort((a, b) => a.balance - b.balance);
+        } else {
+          prioritizedDebts.sort((a, b) => b.interestRate - a.interestRate);
+        }
+
+        // 3. Simulation Loop (Baseline)
+        let currentMonth = 0;
+        let totalInterestPaid = 0;
+        const initialPrincipal = debts.reduce((sum, d) => sum + d.balance, 0);
+
+        const timeline = [];
+        const milestones = [];
+        let currentDebts = JSON.parse(JSON.stringify(prioritizedDebts));
+
+        while (currentDebts.some((d) => d.balance > 0) && currentMonth < 600) {
+          currentMonth++;
+          let budget = monthlyBudget;
+          const monthDate = new Date(baseDate);
+          monthDate.setMonth(baseDate.getMonth() + currentMonth - 1);
+          const dateStr = monthDate.toLocaleString("default", {
+            month: "short",
+            year: "numeric",
+          });
+
+          const snapshot = {
+            month: currentMonth,
+            date: dateStr,
+            balances: {},
+            payments: {},
+            interests: {},
+            startingBalances: {},
+            plannedPayments: {},
+            total: 0,
+            snowball: 0,
+          };
+
+          // Capture starting balances
+          currentDebts.forEach((d) => {
+            snapshot.startingBalances[d.name] = d.balance;
+          });
+
+          currentDebts.forEach((d) => {
+            let interest = 0;
+            if (d.balance > 0) {
+              interest = d.balance * (d.interestRate / 100 / 12);
+              totalInterestPaid += interest;
+              d.balance += interest;
+            }
+            snapshot.interests[d.name] = interest;
+          });
+
+          currentDebts.forEach((d) => {
+            let paid = 0;
+            if (d.balance > 0) {
+              paid = Math.min(d.balance, d.minPayment);
+              d.balance -= paid;
+              budget -= paid;
+            }
+            snapshot.payments[d.name] = paid;
+          });
+
+          // Snowball = extra budget remaining after all minimums
+          snapshot.snowball = budget;
+
+          for (let d of currentDebts) {
+            if (d.balance > 0 && budget > 0) {
+              const extra = Math.min(d.balance, budget);
+              d.balance -= extra;
+              budget -= extra;
+              snapshot.payments[d.name] += extra;
+            }
+            snapshot.plannedPayments[d.name] = snapshot.payments[d.name];
+            snapshot.balances[d.name] = d.balance;
+            snapshot.total += d.balance;
+            if (d.balance <= 0 && !milestones.find((m) => m.name === d.name)) {
+              milestones.push({
+                name: d.name,
+                month: currentMonth,
+                date: dateStr,
+                rate: d.interestRate,
+              });
+            }
+          }
+          timeline.push(snapshot);
+        }
+
+        // Store for PDF (baseline data only)
+        lastResult = {
+          metrics: {
+            months: currentMonth,
+            date: new Date(baseDate).setMonth(
+              baseDate.getMonth() + currentMonth - 1,
+            ),
+            interest: totalInterestPaid,
+            total: initialPrincipal + totalInterestPaid,
+            budget: monthlyBudget,
+            split: `1-14th: $${(extraPayment + firstHalfMins).toLocaleString()} | 15th+: $${secondHalfMins.toLocaleString()}`,
+          },
+          milestones: milestones,
+          timeline: timeline,
+          debtNames: prioritizedDebts.map((d) => d.name),
+          method: method,
+          extra: extraPayment,
         };
 
-        function switchTab(view) {
-            const mTab = document.getElementById('tab-milestones');
-            const tTab = document.getElementById('tab-timeline');
-            const mView = document.getElementById('view-milestones');
-            const tView = document.getElementById('view-timeline');
+        // Cache baseline for interactive replay
+        baselineTimeline = JSON.parse(JSON.stringify(timeline));
+        parsedDebtsCache = JSON.parse(JSON.stringify(prioritizedDebts));
+        monthlyBudgetCache = monthlyBudget;
 
-            if (view === 'milestones') {
-                mTab.classList.add('tab-active'); mTab.classList.remove('text-slate-400');
-                tTab.classList.remove('tab-active'); tTab.classList.add('text-slate-400');
-                mView.classList.remove('hidden');
-                tView.classList.add('hidden');
-            } else {
-                tTab.classList.add('tab-active'); tTab.classList.remove('text-slate-400');
-                mTab.classList.remove('tab-active'); mTab.classList.add('text-slate-400');
-                tView.classList.remove('hidden');
-                mView.classList.add('hidden');
+        // Build interactive timeline (applies overrides if any)
+        const activeTimeline = buildInteractiveTimeline();
+
+        // UI Update (metrics always show baseline)
+        document.getElementById("metric-months").innerText =
+          `${currentMonth} Months`;
+        const finalDate = new Date(lastResult.metrics.date);
+        document.getElementById("metric-date").innerText =
+          `Payoff Date: ${finalDate.toLocaleString("default", { month: "long", year: "numeric" })}`;
+        document.getElementById("metric-interest").innerText =
+          `$${totalInterestPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        document.getElementById("metric-total").innerText =
+          `$${lastResult.metrics.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        document.getElementById("metric-budget").innerText =
+          `$${monthlyBudget.toLocaleString()}`;
+        document.getElementById("metric-flow-split").innerText =
+          lastResult.metrics.split;
+
+        renderMilestones(milestones, prioritizedDebts);
+        renderTimelineTransposed(activeTimeline, lastResult.debtNames);
+        updateChart(timeline);
+      }
+
+      /**
+       * Build the interactive timeline by replaying the simulation with overrides.
+       * Returns baseline timeline if no overrides exist.
+       */
+      function buildInteractiveTimeline() {
+        if (Object.keys(interactiveOverrides).length === 0) {
+          return baselineTimeline;
+        }
+        return replayWithOverrides(
+          parsedDebtsCache,
+          monthlyBudgetCache,
+          baselineTimeline,
+          interactiveOverrides,
+        ).timeline;
+      }
+
+      /**
+       * Re-run the simulation from scratch, applying overrides per-month.
+       * Overrides reduce/increase a specific debt's payment but do NOT
+       * feed the snowball pool (snowball isolation rule).
+       */
+      function replayWithOverrides(
+        parsedDebts,
+        monthlyBudget,
+        baseline,
+        overrides,
+      ) {
+        let currentDebts = JSON.parse(JSON.stringify(parsedDebts));
+        const timeline = [];
+        const milestones = [];
+        let totalInterestPaid = 0;
+
+        for (let monthIdx = 0; monthIdx < 600; monthIdx++) {
+          if (!currentDebts.some((d) => d.balance > 0)) break;
+
+          const baseDateStr =
+            monthIdx < baseline.length
+              ? baseline[monthIdx].date
+              : (() => {
+                  // Extend dates beyond baseline if needed
+                  const startVal = document.getElementById("startDate").value;
+                  const d = new Date(startVal + "-01T12:00:00");
+                  d.setMonth(d.getMonth() + monthIdx);
+                  return d.toLocaleString("default", {
+                    month: "short",
+                    year: "numeric",
+                  });
+                })();
+
+          let budget = monthlyBudget;
+          const snapshot = {
+            month: monthIdx + 1,
+            date: baseDateStr,
+            balances: {},
+            payments: {},
+            interests: {},
+            startingBalances: {},
+            plannedPayments: {},
+            total: 0,
+            snowball: 0,
+          };
+
+          // Starting balances
+          currentDebts.forEach((d) => {
+            snapshot.startingBalances[d.name] = d.balance;
+          });
+
+          // Interest
+          currentDebts.forEach((d) => {
+            let interest = 0;
+            if (d.balance > 0) {
+              interest = d.balance * (d.interestRate / 100 / 12);
+              totalInterestPaid += interest;
+              d.balance += interest;
             }
-        }
+            snapshot.interests[d.name] = interest;
+          });
 
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const text = e.target.result;
-                const rows = text.split(/\r?\n/).filter(r => r.trim());
-                const cleanData = rows.map(r => {
-                    const separator = r.includes('\t') ? '\t' : ',';
-                    return r.split(separator).map(cell => cell.trim().replace(/[$,]/g, '')).join(', ');
-                }).join('\n');
-                document.getElementById('debtData').value = cleanData;
-                runSimulation();
-            };
-            reader.readAsText(file);
-        }
-
-        function clearData() {
-            if (confirm("Clear all data and reset?")) {
-                localStorage.clear();
-                location.reload();
+          // Pay minimums
+          currentDebts.forEach((d) => {
+            let paid = 0;
+            if (d.balance > 0) {
+              paid = Math.min(d.balance, d.minPayment);
+              d.balance -= paid;
+              budget -= paid;
             }
-        }
+            snapshot.payments[d.name] = paid;
+          });
 
-        function downloadTemplate() {
-            const headers = "Name, Balance, Interest Rate (Decimal), Min Payment, Due Day (Optional)\n";
-            const example = "Credit Card A, 5000, 0.1899, 150, 15\nPersonal Loan, 12000, 0.085, 350, 1\nCar Loan, 8000, 0.05, 250, 28";
-            const blob = new Blob([headers + example], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('hidden', ''); a.setAttribute('href', url); a.setAttribute('download', 'DebtPipe_Template.csv');
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        }
+          // Snowball = extra budget remaining after all minimums
+          snapshot.snowball = budget;
 
-        function runSimulation() {
-            const rawData = document.getElementById('debtData').value;
-            const extraPayment = parseFloat(document.getElementById('extra').value) || 0;
-            const method = document.getElementById('method').value;
-            const startVal = document.getElementById('startDate').value;
-
-            localStorage.setItem('debtpipe_data', rawData);
-            localStorage.setItem('debtpipe_extra', extraPayment);
-            localStorage.setItem('debtpipe_method', method);
-            localStorage.setItem('debtpipe_start', startVal);
-
-            const baseDate = new Date(startVal + '-01T12:00:00');
-
-            // 1. Parse
-            const debts = rawData.trim().split('\n').map(line => {
-                const parts = line.split(',').map(s => s.trim());
-                let rate = parseFloat(parts[2]);
-                if (rate < 1 && rate > 0) rate = rate * 100;
-                return {
-                    name: parts[0],
-                    balance: parseFloat(parts[1]),
-                    interestRate: rate || 0,
-                    minPayment: parseFloat(parts[3]),
-                    dueDay: parseInt(parts[4]) || 1
-                };
-            }).filter(d => !isNaN(d.balance) && !isNaN(d.minPayment));
-
-            if (debts.length === 0) return;
-
-            const firstHalfMins = debts.filter(d => d.dueDay <= 14).reduce((sum, d) => sum + d.minPayment, 0);
-            const secondHalfMins = debts.filter(d => d.dueDay > 14).reduce((sum, d) => sum + d.minPayment, 0);
-            const monthlyBudget = extraPayment + firstHalfMins + secondHalfMins;
-
-            // 2. Sort
-            const prioritizedDebts = [...debts];
-            if (method === "snowball") {
-                prioritizedDebts.sort((a, b) => a.balance - b.balance);
-            } else {
-                prioritizedDebts.sort((a, b) => b.interestRate - a.interestRate);
+          // Snowball extra (normal rules, unaffected by overrides)
+          for (let d of currentDebts) {
+            if (d.balance > 0 && budget > 0) {
+              const extra = Math.min(d.balance, budget);
+              d.balance -= extra;
+              budget -= extra;
+              snapshot.payments[d.name] += extra;
             }
+            // Store what simulation computed (before overrides)
+            snapshot.plannedPayments[d.name] = snapshot.payments[d.name];
+          }
 
-            // 3. Simulation Loop
-            let currentMonth = 0;
-            let totalInterestPaid = 0;
-            const initialPrincipal = debts.reduce((sum, d) => sum + d.balance, 0);
-            
-            const timeline = [];
-            const milestones = [];
-            let currentDebts = JSON.parse(JSON.stringify(prioritizedDebts));
-
-            while (currentDebts.some(d => d.balance > 0) && currentMonth < 600) {
-                currentMonth++;
-                let budget = monthlyBudget;
-                const monthDate = new Date(baseDate);
-                monthDate.setMonth(baseDate.getMonth() + currentMonth - 1);
-                const dateStr = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
-
-                const snapshot = { month: currentMonth, date: dateStr, balances: {}, payments: {}, interests: {}, total: 0 };
-
-                currentDebts.forEach(d => {
-                    let interest = 0;
-                    if (d.balance > 0) {
-                        interest = d.balance * ((d.interestRate / 100) / 12);
-                        totalInterestPaid += interest;
-                        d.balance += interest;
-                    }
-                    snapshot.interests[d.name] = interest;
-                });
-
-                currentDebts.forEach(d => {
-                    let paid = 0;
-                    if (d.balance > 0) {
-                        paid = Math.min(d.balance, d.minPayment);
-                        d.balance -= paid;
-                        budget -= paid;
-                    }
-                    snapshot.payments[d.name] = paid;
-                });
-
-                for (let d of currentDebts) {
-                    if (d.balance > 0 && budget > 0) {
-                        const extra = Math.min(d.balance, budget);
-                        d.balance -= extra;
-                        budget -= extra;
-                        snapshot.payments[d.name] += extra;
-                    }
-                    snapshot.balances[d.name] = d.balance;
-                    snapshot.total += d.balance;
-                    if (d.balance <= 0 && !milestones.find(m => m.name === d.name)) {
-                        milestones.push({ name: d.name, month: currentMonth, date: dateStr, rate: d.interestRate });
-                    }
-                }
-                timeline.push(snapshot);
+          // Apply overrides (post-process): only amountOverride changes math
+          currentDebts.forEach((d) => {
+            const key = `${d.name}|${monthIdx}`;
+            const ov = overrides[key];
+            if (ov && ov.amountOverride != null && ov.amountOverride > 0) {
+              const planned = snapshot.payments[d.name];
+              // Undo planned payment on balance, then apply override
+              d.balance += planned;
+              const actual = Math.min(d.balance, ov.amountOverride);
+              d.balance -= actual;
+              snapshot.payments[d.name] = actual;
             }
 
-            // Store for PDF
-            lastResult = {
-                metrics: {
-                    months: currentMonth,
-                    date: new Date(baseDate).setMonth(baseDate.getMonth() + currentMonth - 1),
-                    interest: totalInterestPaid,
-                    total: initialPrincipal + totalInterestPaid,
-                    budget: monthlyBudget,
-                    split: `1-14th: $${(extraPayment + firstHalfMins).toLocaleString()} | 15th+: $${secondHalfMins.toLocaleString()}`
-                },
-                milestones: milestones,
-                timeline: timeline,
-                debtNames: prioritizedDebts.map(d => d.name),
-                method: method,
-                extra: extraPayment
-            };
+            snapshot.balances[d.name] = d.balance;
+            snapshot.total += d.balance;
+            if (d.balance <= 0 && !milestones.find((m) => m.name === d.name)) {
+              milestones.push({
+                name: d.name,
+                month: monthIdx + 1,
+                date: baseDateStr,
+                rate: d.interestRate,
+              });
+            }
+          });
 
-            // UI Update
-            document.getElementById('metric-months').innerText = `${currentMonth} Months`;
-            const finalDate = new Date(lastResult.metrics.date);
-            document.getElementById('metric-date').innerText = `Payoff Date: ${finalDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
-            document.getElementById('metric-interest').innerText = `$${totalInterestPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('metric-total').innerText = `$${lastResult.metrics.total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('metric-budget').innerText = `$${monthlyBudget.toLocaleString()}`;
-            document.getElementById('metric-flow-split').innerText = lastResult.metrics.split;
-
-            renderMilestones(milestones, prioritizedDebts);
-            renderTimelineTransposed(timeline, lastResult.debtNames);
-            updateChart(timeline);
+          timeline.push(snapshot);
         }
 
-        function renderMilestones(milestones, allDebts) {
-            const payoffOrder = milestones.map(m => m.name);
-            const remaining = allDebts.filter(d => !payoffOrder.includes(d.name)).map(d => d.name);
-            const combined = [...milestones, ...remaining.map(name => ({ name, month: '--', date: '--', rate: allDebts.find(d => d.name === name).interestRate }))];
+        return { timeline, milestones, totalInterestPaid };
+      }
 
-            document.getElementById('milestonesBody').innerHTML = combined.map((m, i) => `
+      function renderMilestones(milestones, allDebts) {
+        const payoffOrder = milestones.map((m) => m.name);
+        const remaining = allDebts
+          .filter((d) => !payoffOrder.includes(d.name))
+          .map((d) => d.name);
+        const combined = [
+          ...milestones,
+          ...remaining.map((name) => ({
+            name,
+            month: "--",
+            date: "--",
+            rate: allDebts.find((d) => d.name === name).interestRate,
+          })),
+        ];
+
+        document.getElementById("milestonesBody").innerHTML = combined
+          .map(
+            (m, i) => `
                 <tr class="hover:bg-slate-800/30 transition-colors border-b border-slate-700/30">
                     <td class="p-4 text-slate-500 font-mono">#${i + 1}</td>
                     <td class="p-4 font-bold text-white">${m.name}</td>
@@ -383,61 +1023,259 @@
                     <td class="p-4 text-center font-medium">${m.month}</td>
                     <td class="p-4 text-right text-emerald-400 font-extrabold">${m.date}</td>
                 </tr>
-            `).join('');
-        }
+            `,
+          )
+          .join("");
+      }
 
-        function renderTimelineTransposed(timeline, debtNames) {
-            const headerRow = `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600">Debt Name</th>` + 
-                timeline.map(step => `<th class="p-3 text-center border-l border-slate-700/50 min-w-[110px] border-b border-slate-600">${step.date}</th>`).join('') + `</tr>`;
-            document.getElementById('timelineHeader').innerHTML = headerRow;
+      function renderTimelineTransposed(timeline, debtNames) {
+        const baseFlow = monthlyBudgetCache;
+        const esc = (s) => s.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        const fmt = (n) =>
+          n.toFixed(2).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
 
-            document.getElementById('timelineBody').innerHTML = debtNames.map(name => `
+        // Header row with optional month-specific flow
+        const baseExtra = lastResult ? lastResult.extra : 0;
+        const headerRow =
+          `<tr><th class="p-3 bg-slate-800 sticky-col z-30 min-w-[150px] border-b border-slate-600">Debt Name</th>` +
+          timeline
+            .map((step, monthIdx) => {
+              // Compute month flow: sum of payments for debts NOT yet toggled paid
+              let unpaidSum = 0;
+              debtNames.forEach((name) => {
+                const key = `${name}|${monthIdx}`;
+                const ov = interactiveOverrides[key];
+                const isPaid = ov && ov.paid;
+                if (!isPaid) {
+                  unpaidSum += step.payments[name] || 0;
+                }
+              });
+              const monthFlow = unpaidSum;
+              const showFlow = Math.abs(monthFlow - baseFlow) >= 0.01;
+              const snowball =
+                step.snowball != null ? step.snowball : baseExtra;
+              const snowballGrew = snowball > baseExtra + 0.01;
+              return `<th class="p-3 text-center border-l border-slate-700/50 min-w-[130px] border-b border-slate-600">
+                <div class="inline-flex items-center gap-1 justify-center mb-1">
+                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${snowballGrew ? "bg-emerald-900/60 text-emerald-300" : "bg-slate-700/60 text-slate-400"}" title="Snowball value this month">❄ $${fmt(snowball)}</span>
+                </div>
+                <div>${step.date}</div>
+                ${showFlow ? `<div class="month-flow">Flow: $${fmt(monthFlow)}</div>` : ""}
+              </th>`;
+            })
+            .join("") +
+          `</tr>`;
+        document.getElementById("timelineHeader").innerHTML = headerRow;
+
+        // Body rows with interactive controls
+        document.getElementById("timelineBody").innerHTML = debtNames
+          .map(
+            (name) => `
                 <tr class="hover:bg-slate-800/20 group">
                     <td class="p-3 font-bold text-slate-200 sticky-col z-10 group-hover:bg-slate-800 transition-colors border-b border-slate-700/30 text-left">${name}</td>
-                    ${timeline.map(step => {
+                    ${timeline
+                      .map((step, monthIdx) => {
+                        const start = step.startingBalances[name] || 0;
                         const bal = step.balances[name];
                         const paid = step.payments[name];
+                        const planned = step.plannedPayments[name] || 0;
                         const interest = step.interests[name];
-                        const isZero = bal <= 0 && (timeline[timeline.indexOf(step)-1]?.balances[name] > 0 || timeline.indexOf(step) === 0);
+                        const key = `${name}|${monthIdx}`;
+                        const ov = interactiveOverrides[key];
+                        const isPaidToggled = ov && ov.paid;
+                        const isActive =
+                          start > 0 || paid > 0 || interest > 0 || bal > 0;
+                        const isZero =
+                          bal <= 0 &&
+                          (timeline[monthIdx - 1]?.balances[name] > 0 ||
+                            monthIdx === 0);
+
+                        // Inactive cell (debt already fully paid in prior month)
+                        if (!isActive && bal <= 0 && !ov) {
+                          return `<td class="p-3 text-center border-l border-slate-700/30 border-b border-slate-700/30 text-slate-600">—</td>`;
+                        }
+
+                        const showCheckbox = isActive;
+                        const escapedName = esc(name);
+
                         return `
-                            <td class="p-3 text-center border-l border-slate-700/30 border-b border-slate-700/30 ${isZero ? 'bg-emerald-900/20' : ''}">
-                                <div class="${bal <= 0 ? 'text-emerald-500 font-bold' : 'text-slate-300'}">${bal <= 0 ? 'PAID' : '$' + Math.round(bal).toLocaleString()}</div>
-                                ${paid > 0 ? `<div class="text-[10px] text-emerald-400 font-bold mt-1">Pay $${Math.round(paid).toLocaleString()}</div>` : ''}
-                                ${interest > 0 ? `<div class="text-[9px] text-rose-500/80 font-medium italic">Int. $${Math.round(interest).toLocaleString()}</div>` : ''}
+                            <td class="p-3 text-center border-l border-slate-700/30 border-b border-slate-700/30 cell-wrapper ${isPaidToggled ? "cell-paid" : ""} ${isZero ? "bg-emerald-900/20" : ""}">
+                                ${showCheckbox ? `<input type="checkbox" class="cell-checkbox" ${isPaidToggled ? "checked" : ""} onchange="togglePaid('${escapedName}', ${monthIdx}, this.checked)" title="Mark as paid">` : ""}
+                                <div class="${start > 0 && start !== bal ? "text-slate-500 text-[9px] mb-1" : "hidden"}">Start $${fmt(start)}</div>
+                                ${interest > 0 ? `<div class="text-[9px] text-rose-500/80 font-medium italic">Int. $${fmt(interest)}</div>` : ""}
+                                ${isActive ? `<div class="text-[10px] ${paid > 0 ? "text-emerald-400" : "text-slate-500"} font-bold mt-1 cursor-pointer hover:underline" onclick="startEditPayment('${escapedName}', ${monthIdx}, ${paid || planned || 0}, this)" title="Click to edit payment amount">Pay $${fmt(paid || planned || 0)}</div>` : ""}
+                                <div class="${bal <= 0 ? "text-emerald-500 font-bold" : "text-slate-300"}">${bal <= 0 ? "PAID OFF!" : "$" + fmt(bal)}</div>
                             </td>
                         `;
-                    }).join('')}
+                      })
+                      .join("")}
                 </tr>
-            `).join('');
-        }
+            `,
+          )
+          .join("");
+      }
 
-        function updateChart(timeline) {
-            const ctx = document.getElementById('payoffChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: timeline.map(d => d.date),
-                    datasets: [{
-                        label: 'Total Debt', data: timeline.map(d => d.total), borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0
-                    }]
+      // ---------- Interactive Override Helpers ----------
+
+      function togglePaid(debtName, monthIdx, checked) {
+        const key = `${debtName}|${monthIdx}`;
+        if (checked) {
+          if (!interactiveOverrides[key])
+            interactiveOverrides[key] = { paid: false, amountOverride: null };
+          interactiveOverrides[key].paid = true;
+        } else {
+          if (interactiveOverrides[key]) {
+            interactiveOverrides[key].paid = false;
+            // Clean up entry if no override amount either
+            if (
+              interactiveOverrides[key].amountOverride == null ||
+              interactiveOverrides[key].amountOverride <= 0
+            ) {
+              delete interactiveOverrides[key];
+            }
+          }
+        }
+        saveOverrides();
+        applyOverridesAndRender();
+      }
+
+      function startEditPayment(debtName, monthIdx, currentValue, el) {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.className = "inline-edit";
+        input.value = currentValue.toFixed(2);
+        input.step = "0.01";
+        input.min = "0";
+
+        el.replaceWith(input);
+        input.focus();
+        input.select();
+
+        const save = () => {
+          const val = parseFloat(input.value);
+          const key = `${debtName}|${monthIdx}`;
+          if (val > 0) {
+            if (!interactiveOverrides[key])
+              interactiveOverrides[key] = { paid: true, amountOverride: null };
+            interactiveOverrides[key].amountOverride = val;
+            interactiveOverrides[key].paid = true; // Auto-mark paid
+          } else {
+            // Clear override amount
+            if (interactiveOverrides[key]) {
+              interactiveOverrides[key].amountOverride = null;
+              if (!interactiveOverrides[key].paid) {
+                delete interactiveOverrides[key];
+              }
+            }
+          }
+          saveOverrides();
+          applyOverridesAndRender();
+        };
+
+        let saved = false;
+        input.addEventListener("blur", () => {
+          if (!saved) {
+            saved = true;
+            save();
+          }
+        });
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            saved = true;
+            save();
+          }
+          if (e.key === "Escape") {
+            saved = true;
+            applyOverridesAndRender();
+          }
+        });
+      }
+
+      function saveOverrides() {
+        localStorage.setItem(
+          "debtpipe_overrides",
+          JSON.stringify(interactiveOverrides),
+        );
+      }
+
+      function applyOverridesAndRender() {
+        if (!lastResult || baselineTimeline.length === 0) return;
+        const activeTimeline = buildInteractiveTimeline();
+        renderTimelineTransposed(activeTimeline, lastResult.debtNames);
+      }
+
+      function resetOverrides() {
+        if (
+          Object.keys(interactiveOverrides).length === 0 ||
+          confirm("Reset all payment overrides?")
+        ) {
+          interactiveOverrides = {};
+          localStorage.removeItem("debtpipe_overrides");
+          applyOverridesAndRender();
+        }
+      }
+
+      // ---------- Chart ----------
+
+      function updateChart(timeline) {
+        const ctx = document.getElementById("payoffChart").getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: timeline.map((d) => d.date),
+            datasets: [
+              {
+                label: "Total Debt",
+                data: timeline.map((d) => d.total),
+                borderColor: "#10b981",
+                backgroundColor: "rgba(16, 185, 129, 0.1)",
+                fill: true,
+                tension: 0.4,
+                borderWidth: 3,
+                pointRadius: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                grid: { color: "rgba(255,255,255,0.05)" },
+                ticks: {
+                  color: "#64748b",
+                  callback: (v) => "$" + v.toLocaleString(),
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', callback: v => '$' + v.toLocaleString() } },
-                        x: { grid: { display: false }, ticks: { color: '#64748b', autoSkip: true, maxTicksLimit: 12 } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: "#64748b", autoSkip: true, maxTicksLimit: 12 },
+              },
+            },
+            plugins: { legend: { display: false } },
+          },
+        });
+      }
 
-        function exportToPDF() {
-            if (!lastResult) return alert("Run simulation first.");
+      // ---------- PDF Export (reflects interactive state) ----------
 
-            const html = `
+      function exportToPDF() {
+        if (!lastResult) return alert("Run simulation first.");
+        const fmt = (n) =>
+          n.toFixed(2).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+
+        // Use interactive timeline so PDF matches what's on screen
+        const pdfTimeline = buildInteractiveTimeline();
+        const hasOverrides = Object.keys(interactiveOverrides).length > 0;
+
+        const html = `
                 <div style="font-family: Arial, sans-serif; color: #334155; padding: 15px; background: white; width: 950px;">
                     <!-- Header -->
                     <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #10b981; padding-bottom: 8px; margin-bottom: 15px;">
@@ -447,7 +1285,8 @@
                         </div>
                         <div style="text-align: right; font-size: 8pt; color: #64748b;">
                             <p style="margin: 0;">Plan Generated: ${new Date().toLocaleDateString()}</p>
-                            <p style="margin: 1px 0 0 0;">Method: ${lastResult.method.toUpperCase()} | Extra: $${lastResult.extra}/mo</p>
+                            <p style="margin: 1px 0 0 0;">Method: ${lastResult.method.toUpperCase()} | Extra: $${fmt(lastResult.extra)}/mo</p>
+                            ${hasOverrides ? `<p style="margin: 1px 0 0 0; color: #10b981; font-weight: bold;">Includes manual payment overrides</p>` : ""}
                         </div>
                     </div>
 
@@ -456,21 +1295,21 @@
                         <div style="border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; background: #f8fafc;">
                             <div style="font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: bold;">Time to Freedom</div>
                             <div style="font-size: 12pt; font-weight: bold; color: #0f172a;">${lastResult.metrics.months} Months</div>
-                            <div style="font-size: 6.5pt; color: #64748b;">Payoff: ${new Date(lastResult.metrics.date).toLocaleString('default', { month: 'short', year: 'numeric' })}</div>
+                            <div style="font-size: 6.5pt; color: #64748b;">Payoff: ${new Date(lastResult.metrics.date).toLocaleString("default", { month: "short", year: "numeric" })}</div>
                         </div>
                         <div style="border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; background: #f8fafc;">
                             <div style="font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: bold;">Total Interest</div>
-                            <div style="font-size: 12pt; font-weight: bold; color: #f43f5e;">$${Math.round(lastResult.metrics.interest).toLocaleString()}</div>
+                            <div style="font-size: 12pt; font-weight: bold; color: #f43f5e;">$${fmt(lastResult.metrics.interest)}</div>
                             <div style="font-size: 6.5pt; color: #64748b;">Paid to banks</div>
                         </div>
                         <div style="border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; background: #f8fafc;">
                             <div style="font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: bold;">Total Cost</div>
-                            <div style="font-size: 12pt; font-weight: bold; color: #0f172a;">$${Math.round(lastResult.metrics.total).toLocaleString()}</div>
+                            <div style="font-size: 12pt; font-weight: bold; color: #0f172a;">$${fmt(lastResult.metrics.total)}</div>
                             <div style="font-size: 6.5pt; color: #64748b;">Principal + Interest</div>
                         </div>
                         <div style="border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; background: #f8fafc;">
                             <div style="font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: bold;">Monthly Flow</div>
-                            <div style="font-size: 12pt; font-weight: bold; color: #0f172a;">$${Math.round(lastResult.metrics.budget).toLocaleString()}</div>
+                            <div style="font-size: 12pt; font-weight: bold; color: #0f172a;">$${fmt(lastResult.metrics.budget)}</div>
                             <div style="font-size: 6.5pt; color: #64748b;">Total Budget</div>
                         </div>
                     </div>
@@ -487,66 +1326,124 @@
                             </tr>
                         </thead>
                         <tbody style="font-size: 8pt;">
-                            ${lastResult.milestones.map((m, i) => `
+                            ${lastResult.milestones
+                              .map(
+                                (m, i) => `
                                 <tr style="page-break-inside: avoid;">
-                                    <td style="padding: 5px; border-bottom: 1px solid #f1f5f9; color: #94a3b8; font-family: monospace;">#${String(i+1).padStart(2, '0')}</td>
+                                    <td style="padding: 5px; border-bottom: 1px solid #f1f5f9; color: #94a3b8; font-family: monospace;">#${String(i + 1).padStart(2, "0")}</td>
                                     <td style="padding: 5px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #1e293b;">${m.name}</td>
                                     <td style="padding: 5px; border-bottom: 1px solid #f1f5f9;">Month ${m.month}</td>
                                     <td style="padding: 5px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #059669; font-weight: bold;">${m.date}</td>
                                 </tr>
-                            `).join('')}
+                            `,
+                              )
+                              .join("")}
                         </tbody>
                     </table>
 
                     <!-- Timeline -->
                     <div style="page-break-inside: avoid;">
-                        <h2 style="font-size: 12pt; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 10px; color: #0f172a;">Full Payoff Timeline (Balances)</h2>
+                        <h2 style="font-size: 12pt; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 10px; color: #0f172a;">Full Payoff Timeline (First 6 Months)</h2>
+                        <p style="font-size: 8pt; color: #64748b; margin-bottom: 8px;">Shows per-month cash flow: Starting balance, Amount paid, Interest accrued, Remaining balance${hasOverrides ? " · ✅ = confirmed paid" : ""}</p>
                         <div style="overflow-x: auto;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 6pt; table-layout: fixed;">
                                 <thead>
                                     <tr style="background: #f1f5f9; color: #475569;">
-                                        <th style="padding: 3px; border: 1px solid #e2e8f0; width: 90px; text-align: left;">Debt Name</th>
-                                        ${lastResult.timeline.filter((_, index) => index % 3 === 0 || index === lastResult.timeline.length - 1).map(step => `
-                                            <th style="padding: 3px; border: 1px solid #e2e8f0; text-align: center;">${step.date}</th>
-                                        `).join('')}
+                                        <th style="padding: 3px; border: 1px solid #e2e8f0; width: 90px; text-align: left; font-weight: bold;">Debt Name</th>
+                                        ${pdfTimeline
+                                          .slice(0, 6)
+                                          .map((step, mIdx) => {
+                                            let unpaidSum = 0;
+                                            lastResult.debtNames.forEach(
+                                              (n) => {
+                                                const ov =
+                                                  interactiveOverrides[
+                                                    `${n}|${mIdx}`
+                                                  ];
+                                                const isPaid = ov && ov.paid;
+                                                if (!isPaid) {
+                                                  unpaidSum +=
+                                                    step.payments[n] || 0;
+                                                }
+                                              },
+                                            );
+                                            const mFlow = unpaidSum;
+                                            const showFlow =
+                                              Math.abs(
+                                                mFlow - monthlyBudgetCache,
+                                              ) >= 0.01;
+                                            return `<th style="padding: 3px; border: 1px solid #e2e8f0; text-align: center; min-width: 110px;">${step.date}${showFlow ? `<div style="font-size:6pt;color:#3b82f6;font-weight:600;margin-top:1px;">Flow: $${fmt(mFlow)}</div>` : ""}</th>`;
+                                          })
+                                          .join("")}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${lastResult.debtNames.map(name => `
+                                    ${lastResult.debtNames
+                                      .map(
+                                        (name) => `
                                         <tr style="page-break-inside: avoid;">
                                             <td style="padding: 3px; border: 1px solid #e2e8f0; font-weight: bold; background: #f8fafc; color: #1e293b; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${name}</td>
-                                            ${lastResult.timeline.filter((_, index) => index % 3 === 0 || index === lastResult.timeline.length - 1).map(step => {
+                                            ${pdfTimeline
+                                              .slice(0, 6)
+                                              .map((step, monthIdx) => {
+                                                const start =
+                                                  step.startingBalances[name] ||
+                                                  0;
                                                 const bal = step.balances[name];
-                                                const isPaid = bal <= 0 && (lastResult.timeline[lastResult.timeline.indexOf(step)-1]?.balances[name] > 0 || lastResult.timeline.indexOf(step) === 0);
-                                                return `<td style="padding: 3px; border: 1px solid #e2e8f0; text-align: center; ${isPaid ? 'background: #ecfdf5; color: #059669; font-weight: bold;' : 'color: #64748b;'}">${bal <= 0 ? 'PAID' : '$' + Math.round(bal).toLocaleString()}</td>`;
-                                            }).join('')}
+                                                const paid =
+                                                  step.payments[name];
+                                                const interest =
+                                                  step.interests[name];
+                                                const key = `${name}|${monthIdx}`;
+                                                const ov =
+                                                  interactiveOverrides[key];
+                                                const isToggled = ov && ov.paid;
+                                                const isPaidOff =
+                                                  bal <= 0 &&
+                                                  (monthIdx === 0 ||
+                                                    pdfTimeline[monthIdx - 1]
+                                                      ?.balances[name] > 0);
+                                                const cellBg = isToggled
+                                                  ? "background: rgba(5, 123, 150, 0.1);"
+                                                  : isPaidOff
+                                                    ? "background: #ecfdf5; color: #059669; font-weight: bold;"
+                                                    : "";
+                                                return `<td style="padding: 3px; border: 1px solid #e2e8f0; text-align: center; vertical-align: top; ${cellBg} color: #64748b;">
+                                                    <div>${isToggled ? `<span style="font-size:7pt;">✅</span><br>` : ""}${start > 0 && start !== bal ? `<span style="font-size:6pt;color:#94a3b8;">Start $${fmt(start)}</span><br>` : ""}
+                                                    ${interest > 0 ? `<span style="font-size:6pt;color:#e11d48;font-style:italic;">Int. $${fmt(interest)}</span><br>` : ""}
+                                                    ${paid > 0 ? `<span style="font-size:7pt;color:#059669;font-weight:bold;">Pay $${fmt(paid)}</span><br>` : ""}
+                                                    <span style="${bal <= 0 ? "color:#059669;font-weight:bold;" : ""}">${bal <= 0 ? "PAID OFF!" : "$" + fmt(bal)}</span>
+                                                </td>`;
+                                              })
+                                              .join("")}
                                         </tr>
-                                    `).join('')}
+                                    `,
+                                      )
+                                      .join("")}
                                 </tbody>
                             </table>
                         </div>
-                        <p style="font-size: 6pt; color: #94a3b8; margin-top: 8px; font-style: italic;">* Timeline sampled every 3 months for readability.</p>
                     </div>
                 </div>
             `;
 
-            const opt = {
-                margin: 10,
-                filename: 'DebtPipe_Payoff_Report.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true, 
-                    letterRendering: true,
-                    scrollY: 0,
-                    scrollX: 0
-                },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-            };
+        const opt = {
+          margin: 10,
+          filename: "DebtPipe_Payoff_Report.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            letterRendering: true,
+            scrollY: 0,
+            scrollX: 0,
+          },
+          jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+        };
 
-            html2pdf().set(opt).from(html).save();
-        }
+        html2pdf().set(opt).from(html).save();
+      }
     </script>
-</body>
+  </body>
 </html>
