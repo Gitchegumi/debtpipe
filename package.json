@@ -1,0 +1,17 @@
+{
+  "name": "debtpipe",
+  "version": "1.0.0",
+  "description": "Unlimited Debt Snowball & Avalanche Simulator",
+  "type": "module",
+  "bin": {
+    "debtpipe": "./cli.js"
+  },
+  "scripts": {
+    "test": "node test-export.js"
+  },
+  "files": [
+    "cli.js",
+    "test-export.js",
+    "README.md"
+  ]
+}
